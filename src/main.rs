@@ -3,10 +3,11 @@ use std::fs;
 use std::io::{BufReader, Read};
 
 mod lexer;
-use lexer::Lexer;
-
 mod token;
-use token::Token;
+mod parser;
+
+use lexer::Lexer;
+use parser::create_ast;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -22,11 +23,11 @@ fn main() {
         .expect("Failed to read file.");
 
     let mut lexer = Lexer::new(&mut content);
-    let mut tokens : Vec<Token> = Vec::new();
-    lexer.read_tokens(&mut tokens);
+    lexer.read_tokens();
+    lexer.print_tokens();
 
-    for token in tokens {
-        println!("{}", token);
-    }
+    
+    let ast = create_ast(lexer.get_tokens());
+
     println!("End");
 }

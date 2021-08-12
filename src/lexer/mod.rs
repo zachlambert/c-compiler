@@ -9,12 +9,14 @@ use token::Token;
 
 pub struct Lexer<'a> {
     input_iter: Peekable<Chars<'a>>,
+    tokens: Vec<Token>,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a String) -> Lexer<'a> {
         Lexer {
-            input_iter: input.chars().peekable()
+            input_iter: input.chars().peekable(),
+            tokens: Vec::new(),
         }
     }
 
@@ -29,6 +31,7 @@ impl<'a> Lexer<'a> {
     fn lookup_keyword(id: &String) -> Option<Keyword> {
         match id.as_str() {
             "return" => Some(Keyword::Return),
+            "int" => Some(Keyword::Int),
             _ => None,
         }
     }
@@ -102,12 +105,22 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    pub fn read_tokens(&mut self, tokens: &mut Vec<Token>) {
+    pub fn read_tokens(&mut self) {
         loop {
             match self.next_token() {
-                Some(token) => tokens.push(token),
+                Some(token) => self.tokens.push(token),
                 None => break,
             }
+        }
+    }
+
+    pub fn get_tokens(&self) -> &Vec<Token> {
+        &self.tokens
+    }
+
+    pub fn print_tokens(&self) {
+        for token in self.tokens.iter() {
+            println!("{}", token);
         }
     }
 }

@@ -1,15 +1,18 @@
 
 use std::fmt;
 
+#[derive(Clone)]
 pub enum Keyword {
     Int,
     Return,
 }
 
+#[derive(Clone)]
 pub enum Constant {
     Int(String),
 }
 
+#[derive(Clone)]
 pub enum Token {
     LParen,
     RParen,
