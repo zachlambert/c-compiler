@@ -101,6 +101,15 @@ impl<'a> Lexer<'a> {
             None
         }
     }
+
+    pub fn read_tokens(&mut self, tokens: &mut Vec<Token>) {
+        loop {
+            match self.next_token() {
+                Some(token) => tokens.push(token),
+                None => break,
+            }
+        }
+    }
 }
 
 impl<'a> Iterator for Lexer<'a> {

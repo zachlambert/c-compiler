@@ -24,29 +24,27 @@ fn main() {
         .expect("Failed to read file.");
 
     let mut lexer = Lexer::new(&mut content);
-    loop {
-        match lexer.next_token() {
-            Some(token) => {
-                match token {
-                    Token::LParen => println!("{{"),
-                    Token::RParen => println!("}}"),
-                    Token::LBrace => println!("("),
-                    Token::RBrace => println!(")"),
-                    Token::Semicolon => println!(";"),
-                    Token::Constant(constant) => match constant {
-                        Constant::Int(int) => println!("Int({})", int),
-                    },
-                    Token::Keyword(keyword) => match keyword {
-                        Keyword::Int => println!("Keyword(int)"),
-                        Keyword::Return => println!("Keyword(return)"),
-                    },
-                    Token::Identifier(identifier) =>
-                        println!("Identifier({})", identifier),
-                    Token::Illegal => println!("Illegal"),
-                };
+    let mut tokens : Vec<Token> = Vec::new();
+
+    lexer.read_tokens(&mut tokens);
+    for token in tokens {
+        match token {
+            Token::LParen => println!("{{"),
+            Token::RParen => println!("}}"),
+            Token::LBrace => println!("("),
+            Token::RBrace => println!(")"),
+            Token::Semicolon => println!(";"),
+            Token::Constant(constant) => match constant {
+                Constant::Int(int) => println!("Int({})", int),
             },
-            None => break,
-        }
+            Token::Keyword(keyword) => match keyword {
+                Keyword::Int => println!("Keyword(int)"),
+                Keyword::Return => println!("Keyword(return)"),
+            },
+            Token::Identifier(identifier) =>
+                println!("Identifier({})", identifier),
+            Token::Illegal => println!("Illegal"),
+        };
     }
     println!("End");
 }
