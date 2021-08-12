@@ -1,4 +1,13 @@
 
+pub enum Keyword {
+    Int,
+    Return,
+}
+
+pub enum Constant {
+    Int(String),
+}
+
 pub enum Token {
     LParen,
     RParen,
