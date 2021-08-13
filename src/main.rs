@@ -26,8 +26,9 @@ fn main() {
     lexer.read_tokens();
     lexer.print_tokens();
 
-    
-    let ast = create_ast(lexer.get_tokens());
+    let ast = create_ast(lexer.get_tokens())
+        .expect("Failed to build ast");
+    ast.print_symbols();
 
     println!("End");
 }
