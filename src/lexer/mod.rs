@@ -85,6 +85,7 @@ impl<'a> Lexer<'a> {
                 '(' => Some(Token::LBrace),
                 ')' => Some(Token::RBrace),
                 ';' => Some(Token::Semicolon),
+                ',' => Some(Token::Comma),
                 _ => {
                     if Self::is_letter(c) {
                         let keyword = self.read_identifier(c);
@@ -98,7 +99,7 @@ impl<'a> Lexer<'a> {
                     } else {
                         Some(Token::Illegal)
                     }
-                }
+                },
             }
         } else {
             None

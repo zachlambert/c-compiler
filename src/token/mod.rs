@@ -19,6 +19,7 @@ pub enum Token {
     LBrace,
     RBrace,
     Semicolon,
+    Comma,
     Constant(Constant),
     Keyword(Keyword),
     Identifier(String),
@@ -34,6 +35,7 @@ impl fmt::Display for Token {
             Token::LBrace => write!(fmt, "("),
             Token::RBrace => write!(fmt, ")"),
             Token::Semicolon => write!(fmt, ";"),
+            Token::Comma => write!(fmt, ","),
             Token::Constant(constant) => match constant {
                 Constant::Int(int) => write!(fmt, "Int({})", int),
             },
