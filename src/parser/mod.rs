@@ -1,4 +1,6 @@
 
+use std::fmt;
+
 use crate::token::Token;
 use crate::token::Keyword;
 use crate::token::Constant;
@@ -78,20 +80,43 @@ impl Ast {
             None => (),
         }
     }
+}
 
-    pub fn print_symbols(&self) {
-        for i in 0..self.nodes.len() {
-            print!("|({})", i);//, self.nodes[i].symbol);
-            match self.nodes[i].child {
-                Some(child) => print!("\\{}/", child),
-                None => (),
-            }
-            match self.nodes[i].next {
-                Some(next) => print!("->{}", next),
-                None => (),
-            }
-            println!("|");
+impl fmt::Display for Ast {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result
+    {
+        let mut stack: Vec<usize> = Vec::new();
+        let mut depths: Vec<u8> = Vec::new();
+        stack.push(self.nodes.len()-1);
+        depths.push(0);
+        loop {
+            match stack.pop() {
+                Some(node) => {
+                    let depth = depths.pop()
+                        .expect("Should have depth");
+                    for j in 0..depth {
+                        write!(fmt, "  ")?;
+                    }
+                    write!(fmt, "{}\n", node)?;//self.nodes[nodes])?;
+                    match self.nodes[node].next {
+                        Some(next) => {
+                            stack.push(next);
+                            depths.push(depth);
+                        },
+                        None => (),
+                    };
+                    match self.nodes[node].child {
+                        Some(child) => {
+                            stack.push(child);
+                            depths.push(depth+1);
+                        },
+                        None => (),
+                    };
+                },
+                None => break,
+            };
         }
+        Ok(())
     }
 }
 
