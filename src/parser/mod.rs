@@ -18,6 +18,18 @@ enum Symbol {
     Expression,
 }
 
+impl fmt::Display for Symbol {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result
+    {
+        match self {
+            Symbol::Program => write!(fmt, "Program"),
+            Symbol::Function(function) => write!(fmt, "Function({})", function.name),
+            Symbol::Statement => write!(fmt, "Statement"),
+            Symbol::Expression => write!(fmt, "Expression"),
+        }
+    }
+}
+
 pub struct Node {
     symbol: Symbol,
     next: Option<usize>,
@@ -97,7 +109,7 @@ impl fmt::Display for Ast {
                     for j in 0..depth {
                         write!(fmt, "  ")?;
                     }
-                    write!(fmt, "{}\n", node)?;//self.nodes[nodes])?;
+                    write!(fmt, "{}", self.nodes[node].symbol)?;
                     match self.nodes[node].next {
                         Some(next) => {
                             stack.push(next);
@@ -112,6 +124,10 @@ impl fmt::Display for Ast {
                         },
                         None => (),
                     };
+
+                    if stack.len() != 0 {
+                        write!(fmt, "\n")?;
+                    }
                 },
                 None => break,
             };
@@ -132,7 +148,7 @@ fn match_expression(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> O
     };
     state.step_token();
 
-    let symbol = Symbol::Statement;
+    let symbol = Symbol::Expression;
     ast.set_node(state.node_i, &symbol, None);
     state.step_node();
 
@@ -196,10 +212,10 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
 
     // Match function name identifier
 
-    match &tokens[state.token_i] {
-        Token::Identifier(_) => (),
+    let name = match &tokens[state.token_i] {
+        Token::Identifier(name) => name,
         _ => return None,
-    }
+    };
     state.step_token();
 
     // Match LBrace
@@ -239,7 +255,7 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     state.step_token();
 
     let symbol_function = SymbolFunction {
-        name: String::from("TODO"),
+        name: String::clone(name),
     };
     let symbol = Symbol::Function(symbol_function);
     ast.set_node(state.node_i, &symbol, Some(&nodes));
