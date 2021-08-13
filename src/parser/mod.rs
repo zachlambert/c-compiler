@@ -6,19 +6,19 @@ use crate::token::Keyword;
 use crate::token::Constant;
 
 #[derive(Clone)]
-struct SymbolFunction {
-    name: String,
-    ret_type: String, // TODO: Use enum for this later
+pub struct SymbolFunction {
+    pub name: String,
+    pub ret_type: String, // TODO: Use enum for this later
 }
 
 #[derive(Clone)]
-struct SymbolArgument {
-    name: String,
-    arg_type: String, // TODO: Use enum for this later
+pub struct SymbolArgument {
+    pub name: String,
+    pub arg_type: String, // TODO: Use enum for this later
 }
 
 #[derive(Clone)]
-enum Symbol {
+pub enum Symbol {
     Program,
     Function(SymbolFunction),
     Statement,
@@ -44,9 +44,9 @@ impl fmt::Display for Symbol {
 }
 
 pub struct Node {
-    symbol: Symbol,
-    next: Option<usize>,
-    child: Option<usize>,
+    pub symbol: Symbol,
+    pub next: Option<usize>,
+    pub child: Option<usize>,
 }
 
 pub struct Ast {

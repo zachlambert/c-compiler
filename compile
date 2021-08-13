@@ -1,0 +1,2 @@
+[ -f code/$1.s ] || exit
+target/debug/compiler code/$1.c code/$1.s

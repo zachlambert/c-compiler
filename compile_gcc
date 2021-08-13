@@ -1,0 +1,2 @@
+[ -f code/$1.s ] || exit
+gcc -O3 --omit-frame-pointer -S code/$1.c -o code/$1.s

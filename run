@@ -1,0 +1,4 @@
+[ -f code/$1.s ] || exit
+gcc code/$1.s -o code/$1
+code/$1
+echo $?
