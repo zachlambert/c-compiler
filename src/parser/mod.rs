@@ -4,17 +4,42 @@ use std::fmt;
 use crate::token::Token;
 use crate::token::Keyword;
 use crate::token::Constant;
+use crate::token::Primitive;
 
 #[derive(Clone)]
 pub struct SymbolFunction {
     pub name: String,
-    pub ret_type: String, // TODO: Use enum for this later
+    pub ret_type: Type,
+}
+
+impl fmt::Display for SymbolFunction {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "Function(ret_type:{} name:{})", self.ret_type, self.name)
+    }
+}
+
+#[derive(Clone)]
+pub enum Type {
+    Primitive(Primitive),
+    Identifier(String),
+}
+
+impl fmt::Display for Type {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "Type({})", self)
+    }
 }
 
 #[derive(Clone)]
 pub struct SymbolArgument {
     pub name: String,
-    pub arg_type: String, // TODO: Use enum for this later
+    pub arg_type: Type,
+}
+
+impl fmt::Display for SymbolArgument {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        write!(fmt, "Argument(arg_type:{} name:{})", self.arg_type, self.name)
+    }
 }
 
 #[derive(Clone)]
@@ -28,16 +53,13 @@ pub enum Symbol {
 }
 
 impl fmt::Display for Symbol {
-    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result
-    {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Symbol::Program => write!(fmt, "Program"),
-            Symbol::Function(function) =>
-                write!(fmt, "Function: {}, {}", function.ret_type, function.name),
+            Symbol::Function(function) => write!(fmt, "{}", function),
             Symbol::Statement => write!(fmt, "Statement"),
             Symbol::Expression => write!(fmt, "Expression"),
-            Symbol::Argument(argument) =>
-                write!(fmt, "Argument: {} {}", argument.arg_type, argument.name),
+            Symbol::Argument(argument) => write!(fmt, "{}", argument),
             Symbol::List(name) => write!(fmt, "List({})", name),
         }
     }
@@ -214,7 +236,7 @@ fn match_argument(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
 
     let arg_type = match &tokens[state.token_i] {
         Token::Keyword(keyword) => match keyword {
-            Keyword::Int => String::from("Int"), // TODO: Change to enum
+            Keyword::Primitive(primitive) => Type::Primitive(Primitive::clone(primitive)),
             _ => return None,
         },
         _ => return None,
@@ -229,7 +251,7 @@ fn match_argument(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
 
     let symbol_argument = SymbolArgument {
         name: String::clone(name),
-        arg_type: String::clone(&arg_type),
+        arg_type: Type::clone(&arg_type),
     };
     let symbol = Symbol::Argument(symbol_argument);
     ast.set_node(state.node_i, &symbol, Some(&nodes));
@@ -246,9 +268,10 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
 
     let ret_type = match &tokens[state.token_i] {
         Token::Keyword(keyword) => match keyword {
-            Keyword::Int => String::from("Int"), // TODO: Change to enum
-            _ => return None,
+            Keyword::Primitive(primitive) => Type::Primitive(Primitive::clone(primitive)),
+            _ => panic!("Invalid return type for function"),
         },
+        Token::Identifier(identifier) => Type::Identifier(String::clone(identifier)),
         _ => return None,
     };
     state.step_token();
@@ -264,7 +287,7 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     // Match LBrace
 
     match &tokens[state.token_i] {
-        Token::LBrace => (),
+        Token::LCBracket => (),
         _ => return None,
     }
     state.step_token();
@@ -292,7 +315,7 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     }
 
     match &tokens[state.token_i] {
-        Token::RBrace => (),
+        Token::RCBracket => (),
         _ => return None,
     }
     state.step_token();
@@ -321,7 +344,7 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
 
     let symbol_function = SymbolFunction {
         name: String::clone(name),
-        ret_type: String::clone(&ret_type),
+        ret_type: Type::clone(&ret_type),
     };
     let symbol = Symbol::Function(symbol_function);
     ast.set_node(state.node_i, &symbol, Some(&nodes));

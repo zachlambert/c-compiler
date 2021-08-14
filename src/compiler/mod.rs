@@ -8,6 +8,24 @@ use crate::parser::SymbolArgument;
 //  main:
 // 	    movl	$42, %eax
 // 	    ret
+//
+
+fn compile_statement(ast: &Ast, code: &mut String, parent_i: usize) {
+    let node_opt = ast.nodes[parent_i].child;
+    match node_opt {
+        Some(node_i) => {
+            let node = &ast.nodes[node_i];
+            match node.symbol {
+                Symbol::
+            };
+        }
+        None => (),
+    };
+    let line = format!("\tmovl\t$3, %eax\n");
+    code.push_str(&line);
+    let line = format!("\tret\n");
+    code.push_str(&line);
+}
 
 fn compile_function(ast: &Ast, code: &mut String, parent_i: usize, function: &SymbolFunction) {
     let line = format!(
@@ -18,20 +36,48 @@ fn compile_function(ast: &Ast, code: &mut String, parent_i: usize, function: &Sy
         "{}:\n", function.name
     );
     code.push_str(&line);
-    // let node_opt = ast.nodes[parent_i].child;
-    // loop {
-    //     node_opt = match node_opt {
-    //         Some(node_i) => {
-    //             let node = &ast.nodes[node_i];
-    //             node.next
-    //         }
-    //         None => break,
-    //     }
-    // }
-    let line = format!("\tmovl\t$3, %eax\n");
-    code.push_str(&line);
-    let line = format!("\tret\n");
-    code.push_str(&line);
+
+    let mut node_opt = ast.nodes[parent_i].child;
+
+    // Collect references to arguments
+    let mut args: Vec<&SymbolArgument> = Vec::new();
+    {
+        loop {
+            match node_opt {
+                Some(node_i) => {
+                    let node = &ast.nodes[node_i];
+                    match &node.symbol {
+                        Symbol::Argument(argument) => {
+                            node_opt = node.next;
+                            args.push(&argument);
+                        },
+                        Symbol::Statement => break,
+                        _ => panic!("Unexpected child symbol of function"),
+                    };
+                },
+                None => break,
+            }
+        }
+    }
+    // TODO: Do something with the arguments
+
+    let mut body = String::new();
+    loop {
+        match node_opt {
+            Some(node_i) => {
+                let node = &ast.nodes[node_i];
+                match &node.symbol {
+                    Symbol::Statement => {
+                        node_opt = node.next;
+                        compile_statement(ast, &mut body, node_i);
+                    },
+                    _ => panic!("Unexpected child symbol of function"),
+                };
+            },
+            None => break,
+        };
+    }
+    code.push_str(&body);
 }
 
 fn compile_program(ast: &Ast, code: &mut String, parent_i: usize) {
