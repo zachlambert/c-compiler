@@ -1,9 +1,5 @@
 int main()
 {
-    int x;
-    int x = my_func(x, y*2);
-    int x = 2;
-    x = 5;
-    y = asdf;
+    int x = 4 | 2 && 3;
     return 42;
 }
