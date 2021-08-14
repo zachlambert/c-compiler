@@ -97,15 +97,15 @@ impl fmt::Display for Statement {
         match self {
             Statement::Declare(statement_type, identifier) =>
                 write!(fmt,
-                       "Statement[declare, type: {}, identifier: {}",
+                       "Statement[declare, type: {}, identifier: {}]",
                        statement_type, identifier),
             Statement::Initialise(statement_type, identifier) =>
                 write!(fmt,
-                       "Statement[initialise, type: {}, identifier: {}",
+                       "Statement[initialise, type: {}, identifier: {}]",
                        statement_type, identifier),
             Statement::Assign(identifier) =>
                 write!(fmt,
-                       "Statement[assign, identifier: {}",
+                       "Statement[assign, identifier: {}]",
                        identifier),
             Statement::Return =>
                 write!(fmt, "Statement[return]"),
@@ -257,11 +257,24 @@ impl fmt::Display for Ast {
     }
 }
 
-fn match_expression(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
+fn match_expression_binary_op(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
+    None
+}
+
+fn match_expression_unary_op(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
+    None
+}
+
+fn match_expression_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
+    None
+}
+
+fn match_expression_terminal(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
     let mut state = start;
 
     let expression = match &tokens[state.token_i] {
         Token::Constant(constant) => Expression::Constant(Constant::clone(constant)),
+        Token::Identifier(identifier) => Expression::Identifier(String::clone(identifier)),
         _ => return None,
     };
     state.step_token();
@@ -273,6 +286,147 @@ fn match_expression(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> O
     return Some(state);
 }
 
+fn match_expression(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
+    match match_expression_binary_op(start, tokens, ast) {
+        Some(state) => return Some(state),
+        None => (),
+    }
+    match match_expression_unary_op(start, tokens, ast) {
+        Some(state) => return Some(state),
+        None => (),
+    }
+    match match_expression_function(start, tokens, ast) {
+        Some(state) => return Some(state),
+        None => (),
+    }
+    match match_expression_terminal(start, tokens, ast) {
+        Some(state) => return Some(state),
+        None => (),
+    }
+    return None;
+}
+
+fn match_statement_declare(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
+    let mut state = start;
+
+    let init_type = match &tokens[state.token_i] {
+        Token::Keyword(keyword) => match keyword {
+            Keyword::Primitive(primitive) => Type::Primitive(Primitive::clone(primitive)),
+            _ => return None,
+        }
+        Token::Identifier(identifier) => Type::Identifier(String::clone(identifier)),
+        _ => return None,
+    };
+    state.step_token();
+
+    let identifier = match &tokens[state.token_i] {
+        Token::Identifier(identifier) => identifier,
+        _ => return None,
+    };
+    state.step_token();
+
+    match &tokens[state.token_i] {
+        Token::Semicolon => (),
+        _ => return None,
+    };
+    state.step_token();
+
+    let symbol = Symbol::Statement(Statement::Declare(
+        init_type,
+        String::clone(identifier)
+    ));
+    ast.set_node(state.node_i, &symbol, None);
+    state.step_node();
+
+    return Some(state);
+}
+
+fn match_statement_initialise(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
+    let mut state = start;
+    let mut nodes: Vec<usize> = Vec::new();
+
+    let init_type = match &tokens[state.token_i] {
+        Token::Keyword(keyword) => match keyword {
+            Keyword::Primitive(primitive) => Type::Primitive(Primitive::clone(primitive)),
+            _ => return None,
+        }
+        Token::Identifier(identifier) => Type::Identifier(String::clone(identifier)),
+        _ => return None,
+    };
+    state.step_token();
+
+    let identifier = match &tokens[state.token_i] {
+        Token::Identifier(identifier) => identifier,
+        _ => return None,
+    };
+    state.step_token();
+
+    match &tokens[state.token_i] {
+        Token::Equals => (),
+        _ => return None,
+    };
+    state.step_token();
+
+    match match_expression(state, tokens, ast) {
+        Some(new_state) => {
+            state = new_state;
+            nodes.push(state.node_i-1);
+        },
+        None => return None,
+    }
+
+    match &tokens[state.token_i] {
+        Token::Semicolon => (),
+        _ => return None,
+    };
+    state.step_token();
+
+    let symbol = Symbol::Statement(Statement::Initialise(
+        init_type,
+        String::clone(identifier)
+    ));
+    ast.set_node(state.node_i, &symbol, Some(&nodes));
+    state.step_node();
+
+    return Some(state);
+}
+
+fn match_statement_assign(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
+    let mut state = start;
+    let mut nodes: Vec<usize> = Vec::new();
+
+    let identifier = match &tokens[state.token_i] {
+        Token::Identifier(identifier) => identifier,
+        _ => return None,
+    };
+    state.step_token();
+
+    match &tokens[state.token_i] {
+        Token::Equals => (),
+        _ => return None,
+    };
+    state.step_token();
+
+    match match_expression(state, tokens, ast) {
+        Some(new_state) => {
+            state = new_state;
+            nodes.push(state.node_i-1);
+        },
+        None => return None,
+    }
+
+    match &tokens[state.token_i] {
+        Token::Semicolon => (),
+        _ => return None,
+    };
+    state.step_token();
+
+    let symbol = Symbol::Statement(Statement::Assign(String::clone(identifier)));
+    ast.set_node(state.node_i, &symbol, Some(&nodes));
+    state.step_node();
+
+    return Some(state);
+}
 
 fn match_statement_return(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
     let mut state = start;
@@ -302,18 +456,29 @@ fn match_statement_return(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast
     state.step_token();
 
     let symbol = Symbol::Statement(Statement::Return);
-    ast.set_node(state.node_i, &symbol, None);
+    ast.set_node(state.node_i, &symbol, Some(&nodes));
     state.step_node();
 
     return Some(state);
 }
 
 fn match_statement(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
+    match match_statement_declare(start, tokens, ast) {
+        Some(state) => return Some(state),
+        None => (),
+    }
+    match match_statement_initialise(start, tokens, ast) {
+        Some(state) => return Some(state),
+        None => (),
+    }
+    match match_statement_assign(start, tokens, ast) {
+        Some(state) => return Some(state),
+        None => (),
+    }
     match match_statement_return(start, tokens, ast) {
         Some(state) => return Some(state),
         None => (),
     }
-
     return None;
 }
 
@@ -337,7 +502,7 @@ fn match_argument(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
 
     let argument = Argument {
         name: String::clone(name),
-        arg_type: Type::clone(&arg_type),
+        arg_type: arg_type,
     };
     let symbol = Symbol::Argument(argument);
     ast.set_node(state.node_i, &symbol, None);
@@ -424,7 +589,7 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
 
     let function = Function {
         name: String::clone(name),
-        ret_type: Type::clone(&ret_type),
+        ret_type: ret_type,
     };
     let symbol = Symbol::Function(function);
     ast.set_node(state.node_i, &symbol, Some(&nodes));
