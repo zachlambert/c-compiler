@@ -144,7 +144,6 @@ fn match_statement_assign(parser: &mut Parser) -> bool {
 
 fn match_statement_return(parser: &mut Parser) -> bool {
     parser.start_node();
-
     match parser.consume_token() {
         Token::Keyword(keyword) => match keyword {
             Keyword::Return => (),
@@ -171,6 +170,8 @@ fn match_statement_return(parser: &mut Parser) -> bool {
             return false;
         }
     };
+
+    println!("HERE");
 
     let symbol = Symbol::Statement(Statement::Return);
     parser.confirm_node(&symbol);

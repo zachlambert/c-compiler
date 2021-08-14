@@ -17,6 +17,7 @@ pub struct Parser<'a> {
     state_stack: Vec<State>,
     children: Vec<usize>,
     state: State,
+    stashed_state: State,
 }
 
 impl<'a> Parser<'a> {
@@ -36,6 +37,11 @@ impl<'a> Parser<'a> {
                 node_i: 0,
                 child_i: 0,
             },
+            stashed_state: State {
+                token_i: 0,
+                node_i: 0,
+                child_i: 0,
+            },
         };
         parser.state_stack.reserve(max_stack_size);
         parser.children.reserve(max_num_children);
@@ -47,6 +53,16 @@ impl<'a> Parser<'a> {
             panic!("Reached max stack size. Would need to resize to continue.");
         }
         self.state_stack.push(self.state);
+    }
+
+    // Include the last n added nodes as children in the new node
+    pub fn start_node_with_prev(&mut self, n: usize) {
+        if self.state_stack.len() == self.state_stack.capacity() {
+            panic!("Reached max stack size. Would need to resize to continue.");
+        }
+        self.state.child_i -= n;
+        self.state_stack.push(self.state);
+        self.state.child_i += n;
     }
 
     pub fn confirm_node(&mut self, symbol: &Symbol) {
@@ -92,6 +108,18 @@ impl<'a> Parser<'a> {
             self.state.token_i+=1;
             return &self.tokens[self.state.token_i-1];
         }
+    }
+
+    // These aren't used for rolling back on discarding a node.
+    // They simple keep a single store of node, useful for reverting to a
+    // previous state after consuming a token or number of tokens.
+
+    pub fn stash_state(&mut self) {
+        self.stashed_state = self.state;
+    }
+
+    pub fn rollback_state(&mut self) {
+        self.state = self.stashed_state;
     }
 }
 
