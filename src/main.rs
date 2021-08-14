@@ -3,7 +3,6 @@ use std::fs;
 use std::io::{BufReader, Read, BufWriter, Write};
 
 mod lexer;
-mod token;
 mod parser;
 mod compiler;
 

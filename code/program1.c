@@ -1,15 +1,14 @@
-int do_stuff(int x, int y)
+
+int add(int x, int y)
 {
-    int a;
-    int b;
-    a = x + y;
-    b = 4*x - 3*y;
-    return a*b + 2;
+    return x + y;
 }
 
 int main()
 {
-    int x = 4;
-    int y = 2;
-    return do_stuff(x, y);
+    int x = 2;
+    int y;
+    y = x;
+    int z = add(x, y);
+    return z;
 }

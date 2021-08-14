@@ -1,8 +1,6 @@
 
-use crate::parser::Ast;
-use crate::parser::Symbol;
-use crate::parser::Function;
-use crate::parser::Argument;
+use crate::parser::ast::*;
+use crate::parser::symbol::*;
 
 //      .globl	main
 //  main:
