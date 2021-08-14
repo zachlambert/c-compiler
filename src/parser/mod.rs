@@ -7,12 +7,12 @@ use crate::token::Constant;
 use crate::token::Primitive;
 
 #[derive(Clone)]
-pub struct SymbolFunction {
+pub struct Function {
     pub name: String,
     pub ret_type: Type,
 }
 
-impl fmt::Display for SymbolFunction {
+impl fmt::Display for Function {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "Function[ret_type: {}, name: {}]", self.ret_type, self.name)
     }
@@ -34,24 +34,113 @@ impl fmt::Display for Type {
 }
 
 #[derive(Clone)]
-pub struct SymbolArgument {
+pub struct Argument {
     pub name: String,
     pub arg_type: Type,
 }
 
-impl fmt::Display for SymbolArgument {
+impl fmt::Display for Argument {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "Argument[arg_type: {}, name: {}]", self.arg_type, self.name)
+    }
+}
+
+
+#[derive(Clone)]
+pub enum UnaryOp {
+    Negate,
+    LogicalNot,
+}
+
+impl fmt::Display for UnaryOp {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Negate => write!(fmt, "UnaryOp(Negate)"),
+            LogicalNot => write!(fmt, "UnaryOp(LogicalNot)"),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum BinaryOp {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+    LogicalAnd,
+    LogicalOr,
+}
+
+impl fmt::Display for BinaryOp {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Add => write!(fmt, "BinaryOp(Add)"),
+            Subtract => write!(fmt, "BinaryOp(Subtract)"),
+            Multiply => write!(fmt, "BinaryOp(Multiply)"),
+            Divide => write!(fmt, "BinaryOp(Divide)"),
+            LogicalAnd => write!(fmt, "BinaryOp(LogicalAnd)"),
+            LogicalOr => write!(fmt, "BinaryOp(LogicalOr)"),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum Statement {
+    Declare(Type, String),    // <type> <identifier>;
+    Initialise(Type, String), // <type> <identifier> = <expression>;
+    Assign(String),           // <identifier> = <expression>;
+    Return,                   // return <expression>;
+}
+
+impl fmt::Display for Statement {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Statement::Declare(statement_type, identifier) =>
+                write!(fmt,
+                       "Statement[declare, type: {}, identifier: {}",
+                       statement_type, identifier),
+            Statement::Initialise(statement_type, identifier) =>
+                write!(fmt,
+                       "Statement[initialise, type: {}, identifier: {}",
+                       statement_type, identifier),
+            Statement::Assign(identifier) =>
+                write!(fmt,
+                       "Statement[assign, identifier: {}",
+                       identifier),
+            Statement::Return =>
+                write!(fmt, "Statement[return]"),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum Expression {
+    Function(String), // n child expressions for args
+    UnaryOp(UnaryOp), // one child expression
+    BinaryOp(BinaryOp), // Two child expressions
+    Constant(Constant), // Terminal
+    Identifier(String), // Terminal
+}
+
+impl fmt::Display for Expression {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Expression::Function(name) => write!(fmt, "Expression(function, name: {})", name),
+            Expression::UnaryOp(op) => write!(fmt, "Expression({})", op),
+            Expression::BinaryOp(op) => write!(fmt, "Expression({})", op),
+            Expression::Constant(constant) => write!(fmt, "Expression({})", constant),
+            Expression::Identifier(identifier) => write!(fmt, "Expression(Identifier({}))", identifier),
+        }
     }
 }
 
 #[derive(Clone)]
 pub enum Symbol {
     Program,
-    Function(SymbolFunction),
-    Statement,
-    Expression,
-    Argument(SymbolArgument),
+    Function(Function),
+    Statement(Statement),
+    Expression(Expression),
+    Argument(Argument),
 }
 
 impl fmt::Display for Symbol {
@@ -59,8 +148,8 @@ impl fmt::Display for Symbol {
         match self {
             Symbol::Program => write!(fmt, "Program"),
             Symbol::Function(function) => write!(fmt, "{}", function),
-            Symbol::Statement => write!(fmt, "Statement"),
-            Symbol::Expression => write!(fmt, "Expression"),
+            Symbol::Statement(statement) => write!(fmt, "{}", statement),
+            Symbol::Expression(expression) => write!(fmt, "{}", expression),
             Symbol::Argument(argument) => write!(fmt, "{}", argument),
         }
     }
@@ -171,27 +260,23 @@ impl fmt::Display for Ast {
 fn match_expression(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
     let mut state = start;
 
-    match &tokens[state.token_i] {
-        Token::Constant(constant) => match constant {
-            Constant::Int(_) => (),
-            _ => return None,
-        },
+    let expression = match &tokens[state.token_i] {
+        Token::Constant(constant) => Expression::Constant(Constant::clone(constant)),
         _ => return None,
     };
     state.step_token();
 
-    let symbol = Symbol::Expression;
+    let symbol = Symbol::Expression(expression);
     ast.set_node(state.node_i, &symbol, None);
     state.step_node();
 
     return Some(state);
 }
 
-fn match_statement(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
+
+fn match_statement_return(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
     let mut state = start;
     let mut nodes: Vec<usize> = Vec::new();
-
-    // Match return keyword
 
     match &tokens[state.token_i] {
         Token::Keyword(keyword) => match keyword {
@@ -202,8 +287,6 @@ fn match_statement(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Op
     };
     state.step_token();
 
-    // Match expression
-
     match match_expression(state, tokens, ast) {
         Some(new_state) => {
             state = new_state;
@@ -212,19 +295,26 @@ fn match_statement(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Op
         None => return None,
     }
 
-    // Match semi-colon
-
     match &tokens[state.token_i] {
         Token::Semicolon => (),
         _ => return None,
     };
     state.step_token();
 
-    let symbol = Symbol::Statement;
-    ast.set_node(state.node_i, &symbol, Some(&nodes));
+    let symbol = Symbol::Statement(Statement::Return);
+    ast.set_node(state.node_i, &symbol, None);
     state.step_node();
 
     return Some(state);
+}
+
+fn match_statement(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
+    match match_statement_return(start, tokens, ast) {
+        Some(state) => return Some(state),
+        None => (),
+    }
+
+    return None;
 }
 
 fn match_argument(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
@@ -245,11 +335,11 @@ fn match_argument(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     };
     state.step_token();
 
-    let symbol_argument = SymbolArgument {
+    let argument = Argument {
         name: String::clone(name),
         arg_type: Type::clone(&arg_type),
     };
-    let symbol = Symbol::Argument(symbol_argument);
+    let symbol = Symbol::Argument(argument);
     ast.set_node(state.node_i, &symbol, None);
     state.step_node();
 
@@ -332,11 +422,11 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     }
     state.step_token();
 
-    let symbol_function = SymbolFunction {
+    let function = Function {
         name: String::clone(name),
         ret_type: Type::clone(&ret_type),
     };
-    let symbol = Symbol::Function(symbol_function);
+    let symbol = Symbol::Function(function);
     ast.set_node(state.node_i, &symbol, Some(&nodes));
     state.step_node();
 

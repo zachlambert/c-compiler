@@ -1,8 +1,8 @@
 
 use crate::parser::Ast;
 use crate::parser::Symbol;
-use crate::parser::SymbolFunction;
-use crate::parser::SymbolArgument;
+use crate::parser::Function;
+use crate::parser::Argument;
 
 //      .globl	main
 //  main:
@@ -27,7 +27,7 @@ fn compile_statement(ast: &Ast, code: &mut String, parent_i: usize) {
     code.push_str(&line);
 }
 
-fn compile_function(ast: &Ast, code: &mut String, parent_i: usize, function: &SymbolFunction) {
+fn compile_function(ast: &Ast, code: &mut String, parent_i: usize, function: &Function) {
     let line = format!(
         "\t.globl {}\n", function.name
     );
@@ -40,7 +40,7 @@ fn compile_function(ast: &Ast, code: &mut String, parent_i: usize, function: &Sy
     let mut node_opt = ast.nodes[parent_i].child;
 
     // Collect references to arguments
-    let mut args: Vec<&SymbolArgument> = Vec::new();
+    let mut args: Vec<&Argument> = Vec::new();
     {
         loop {
             match node_opt {
@@ -51,7 +51,7 @@ fn compile_function(ast: &Ast, code: &mut String, parent_i: usize, function: &Sy
                             node_opt = node.next;
                             args.push(&argument);
                         },
-                        Symbol::Statement => break,
+                        Symbol::Statement(_) => break,
                         _ => panic!("Unexpected child symbol of function"),
                     };
                 },
@@ -67,7 +67,7 @@ fn compile_function(ast: &Ast, code: &mut String, parent_i: usize, function: &Sy
             Some(node_i) => {
                 let node = &ast.nodes[node_i];
                 match &node.symbol {
-                    Symbol::Statement => {
+                    Symbol::Statement(_) => {
                         node_opt = node.next;
                         compile_statement(ast, &mut body, node_i);
                     },
