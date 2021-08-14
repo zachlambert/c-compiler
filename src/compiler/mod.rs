@@ -11,16 +11,16 @@ use crate::parser::SymbolArgument;
 //
 
 fn compile_statement(ast: &Ast, code: &mut String, parent_i: usize) {
-    let node_opt = ast.nodes[parent_i].child;
-    match node_opt {
-        Some(node_i) => {
-            let node = &ast.nodes[node_i];
-            match node.symbol {
-                Symbol::
-            };
-        }
-        None => (),
-    };
+    // let node_opt = ast.nodes[parent_i].child;
+    // match node_opt {
+    //     Some(node_i) => {
+    //         let node = &ast.nodes[node_i];
+    //         match node.symbol {
+    //             Symbol::
+    //         };
+    //     }
+    //     None => (),
+    // };
     let line = format!("\tmovl\t$3, %eax\n");
     code.push_str(&line);
     let line = format!("\tret\n");
@@ -103,7 +103,7 @@ pub fn compile_ast(ast: &Ast, code: &mut String) {
     let node_i = ast.nodes.len() - 1;
     let node = &ast.nodes[node_i];
     match &node.symbol {
-        Program => compile_program(ast, code, node_i),
+        Symbol::Program => compile_program(ast, code, node_i),
         _ => panic!("First node isn't program"),
     }
 }

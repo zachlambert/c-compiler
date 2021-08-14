@@ -14,7 +14,7 @@ pub struct SymbolFunction {
 
 impl fmt::Display for SymbolFunction {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "Function(ret_type:{} name:{})", self.ret_type, self.name)
+        write!(fmt, "Function[ret_type: {}, name: {}]", self.ret_type, self.name)
     }
 }
 
@@ -26,7 +26,10 @@ pub enum Type {
 
 impl fmt::Display for Type {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "Type({})", self)
+        match self {
+            Type::Primitive(primitive) => write!(fmt, "Type({})", primitive),
+            Type::Identifier(identifier) => write!(fmt, "Type({})", identifier),
+        }
     }
 }
 
@@ -38,7 +41,7 @@ pub struct SymbolArgument {
 
 impl fmt::Display for SymbolArgument {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "Argument(arg_type:{} name:{})", self.arg_type, self.name)
+        write!(fmt, "Argument[arg_type: {}, name: {}]", self.arg_type, self.name)
     }
 }
 
@@ -49,7 +52,6 @@ pub enum Symbol {
     Statement,
     Expression,
     Argument(SymbolArgument),
-    List(String),
 }
 
 impl fmt::Display for Symbol {
@@ -60,7 +62,6 @@ impl fmt::Display for Symbol {
             Symbol::Statement => write!(fmt, "Statement"),
             Symbol::Expression => write!(fmt, "Expression"),
             Symbol::Argument(argument) => write!(fmt, "{}", argument),
-            Symbol::List(name) => write!(fmt, "List({})", name),
         }
     }
 }
@@ -82,10 +83,6 @@ struct ParserState {
 }
 
 impl ParserState {
-    pub fn step_both(&mut self) {
-        self.token_i+=1;
-        self.node_i+=1;
-    }
     pub fn step_node(&mut self) {
         self.node_i+=1;
     }
@@ -141,7 +138,7 @@ impl fmt::Display for Ast {
                 Some(node) => {
                     let depth = depths.pop()
                         .expect("Should have depth");
-                    for j in 0..depth {
+                    for _ in 0..depth {
                         write!(fmt, "  ")?;
                     }
                     write!(fmt, "{}", self.nodes[node].symbol)?;
@@ -232,7 +229,6 @@ fn match_statement(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Op
 
 fn match_argument(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
     let mut state = start;
-    let mut nodes: Vec<usize> = Vec::new();
 
     let arg_type = match &tokens[state.token_i] {
         Token::Keyword(keyword) => match keyword {
@@ -254,7 +250,7 @@ fn match_argument(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
         arg_type: Type::clone(&arg_type),
     };
     let symbol = Symbol::Argument(symbol_argument);
-    ast.set_node(state.node_i, &symbol, Some(&nodes));
+    ast.set_node(state.node_i, &symbol, None);
     state.step_node();
 
     return Some(state);
@@ -263,8 +259,6 @@ fn match_argument(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
 fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
     let mut state = start;
     let mut nodes: Vec<usize> = Vec::new();
-
-    // Match int keyword
 
     let ret_type = match &tokens[state.token_i] {
         Token::Keyword(keyword) => match keyword {
@@ -276,18 +270,14 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     };
     state.step_token();
 
-    // Match function name identifier
-
     let name = match &tokens[state.token_i] {
         Token::Identifier(name) => name,
         _ => return None,
     };
     state.step_token();
 
-    // Match LBrace
-
     match &tokens[state.token_i] {
-        Token::LCBracket => (),
+        Token::LParen => (),
         _ => return None,
     }
     state.step_token();
@@ -315,13 +305,13 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     }
 
     match &tokens[state.token_i] {
-        Token::RCBracket => (),
+        Token::RParen => (),
         _ => return None,
     }
     state.step_token();
 
     match &tokens[state.token_i] {
-        Token::LParen => (),
+        Token::LCBracket => (),
         _ => return None,
     }
     state.step_token();
@@ -337,7 +327,7 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     }
 
     match &tokens[state.token_i] {
-        Token::RParen => (),
+        Token::RCBracket => (),
         _ => return None,
     }
     state.step_token();
@@ -363,7 +353,9 @@ fn match_program(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opti
             state = new_state;
             nodes.push(state.node_i-1);
         },
-        None => return None,
+        None => {
+            println!("Failed to match function");
+        },
     };
 
     let symbol = Symbol::Program;
@@ -380,6 +372,7 @@ pub fn create_ast(tokens: &Vec<Token>) -> Option<Ast> {
         node_i: 0,
     };
     if match_program(state, tokens, &mut ast).is_none() {
+        println!("Failed to match program");
         return None;
     }
     Some(ast)

@@ -29,7 +29,7 @@ pub enum Keyword {
 impl fmt::Display for Keyword {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Keyword::Primitive(primitive) => write!(fmt, "Primitive({})", primitive),
+            Keyword::Primitive(primitive) => write!(fmt, "{}", primitive),
             Keyword::Return => write!(fmt, "Return"),
         }
     }
@@ -94,13 +94,11 @@ impl fmt::Display for Token {
     {
         match self {
             Token::LParen => write!(fmt, "("),
-            Token::LParen => write!(fmt, ")"),
+            Token::RParen => write!(fmt, ")"),
             Token::LCBracket => write!(fmt, "{{"),
             Token::RCBracket => write!(fmt, "}}"),
             Token::LSBracket => write!(fmt, "["),
             Token::RSBracket => write!(fmt, "]"),
-            Token::Ampersand => write!(fmt, "&"),
-            Token::Circumflex => write!(fmt, "&"),
             Token::Ampersand => write!(fmt, "&"),
             Token::Circumflex => write!(fmt, "^"),
             Token::Percent => write!(fmt, "%"),
