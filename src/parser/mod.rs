@@ -5,8 +5,8 @@ pub mod symbol;
 pub mod ast;
 pub mod parser;
 mod program;
-// mod statement;
-// mod expression;
+mod statement;
+mod expression;
 
 use ast::Ast;
 use parser::Parser;

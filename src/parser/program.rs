@@ -3,7 +3,7 @@ use crate::lexer::token::*;
 use super::symbol::*;
 use super::parser::Parser;
 
-// use super::statement::match_statement;
+use super::statement::match_statement;
 
 fn match_argument(parser: &mut Parser) -> bool {
     parser.start_node();
@@ -99,11 +99,11 @@ fn match_function(parser: &mut Parser) -> bool {
         },
     }
 
-    // loop {
-    //     if !match_statement(parser) {
-    //         break;
-    //     }
-    // }
+    loop {
+        if !match_statement(parser) {
+            break;
+        }
+    }
 
     match parser.consume_token() {
         Token::RCBracket => (),
