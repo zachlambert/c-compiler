@@ -55,8 +55,8 @@ pub enum UnaryOp {
 impl fmt::Display for UnaryOp {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Negate => write!(fmt, "UnaryOp(Negate)"),
-            LogicalNot => write!(fmt, "UnaryOp(LogicalNot)"),
+            UnaryOp::Negate => write!(fmt, "UnaryOp(Negate)"),
+            UnaryOp::LogicalNot => write!(fmt, "UnaryOp(LogicalNot)"),
         }
     }
 }
@@ -69,17 +69,21 @@ pub enum BinaryOp {
     Divide,
     LogicalAnd,
     LogicalOr,
+    BitwiseAnd,
+    BitwiseOr,
 }
 
 impl fmt::Display for BinaryOp {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Add => write!(fmt, "BinaryOp(Add)"),
-            Subtract => write!(fmt, "BinaryOp(Subtract)"),
-            Multiply => write!(fmt, "BinaryOp(Multiply)"),
-            Divide => write!(fmt, "BinaryOp(Divide)"),
-            LogicalAnd => write!(fmt, "BinaryOp(LogicalAnd)"),
-            LogicalOr => write!(fmt, "BinaryOp(LogicalOr)"),
+            BinaryOp::Add => write!(fmt, "BinaryOp(Add)"),
+            BinaryOp::Subtract => write!(fmt, "BinaryOp(Subtract)"),
+            BinaryOp::Multiply => write!(fmt, "BinaryOp(Multiply)"),
+            BinaryOp::Divide => write!(fmt, "BinaryOp(Divide)"),
+            BinaryOp::LogicalAnd => write!(fmt, "BinaryOp(LogicalAnd)"),
+            BinaryOp::LogicalOr => write!(fmt, "BinaryOp(LogicalOr)"),
+            BinaryOp::BitwiseAnd => write!(fmt, "BinaryOp(BitwiseAnd)"),
+            BinaryOp::BitwiseOr => write!(fmt, "BinaryOp(BitwiseOr)"),
         }
     }
 }
@@ -258,15 +262,147 @@ impl fmt::Display for Ast {
 }
 
 fn match_expression_binary_op(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
-    None
+    let mut state = start;
+    let mut nodes: Vec<usize> = Vec::new();
+
+    loop {
+        match match_expression_terminal(state, tokens, ast) {
+            Some(new_state) => {
+                state = new_state;
+                nodes.push(state.node_i-1);
+                break;
+            },
+            None => (),
+        }
+        match match_expression_function(state, tokens, ast) {
+            Some(new_state) => {
+                state = new_state;
+                nodes.push(state.node_i-1);
+                break;
+            },
+            None => (),
+        }
+        return None
+    }
+
+    let binary_op = match &tokens[state.token_i] {
+        Token::Plus => BinaryOp::Add,
+        Token::Minus => BinaryOp::Subtract,
+        Token::Asterisk => BinaryOp::Multiply,
+        Token::RSlash => BinaryOp::Divide,
+        Token::Ampersand =>
+            match &tokens[state.token_i] {
+                Token::Ampersand => {
+                    state.step_token();
+                    BinaryOp::LogicalAnd
+                },
+                _ => BinaryOp::BitwiseAnd,
+            },
+        Token::VBar =>
+            match &tokens[state.token_i] {
+                Token::VBar => {
+                    state.step_token();
+                    BinaryOp::LogicalOr
+                },
+                _ => BinaryOp::BitwiseOr,
+            },
+        _ => return None,
+    };
+    state.step_token();
+
+    match match_expression(state, tokens, ast) {
+        Some(new_state) => {
+            state = new_state;
+            nodes.push(state.node_i-1);
+        },
+        None => return None,
+    }
+
+    let symbol = Symbol::Expression(Expression::BinaryOp(binary_op));
+    ast.set_node(state.node_i, &symbol, Some(&nodes));
+    state.step_node();
+
+    return Some(state);
 }
 
 fn match_expression_unary_op(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
-    None
+    let mut state = start;
+    let mut nodes: Vec<usize> = Vec::new();
+
+    let unary_op = match &tokens[state.token_i] {
+        Token::Minus => UnaryOp::Negate,
+        Token::Exclamation => UnaryOp::LogicalNot,
+        _ => return None,
+    };
+    state.step_token();
+
+    match match_expression(state, tokens, ast) {
+        Some(new_state) => {
+            state = new_state;
+            nodes.push(state.node_i-1);
+        },
+        None => return None,
+    }
+
+    let symbol = Symbol::Expression(Expression::UnaryOp(unary_op));
+    ast.set_node(state.node_i, &symbol, None);
+    state.step_node();
+
+    return Some(state);
 }
 
 fn match_expression_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
-    None
+    let mut state = start;
+    let mut nodes: Vec<usize> = Vec::new();
+
+    let identifier = match &tokens[state.token_i] {
+        Token::Identifier(identifier) => identifier,
+        _ => return None,
+    };
+    state.step_token();
+
+    match &tokens[state.token_i] {
+        Token::LParen => (),
+        _ => return None,
+    };
+    state.step_token();
+
+    loop {
+        match match_expression(state, tokens, ast) {
+            Some(new_state) => {
+                state = new_state;
+                nodes.push(state.node_i-1);
+            },
+            None => break,
+        };
+        loop {
+            match &tokens[state.token_i] {
+                Token::Comma => (),
+                _ => break,
+            };
+            state.step_token();
+            match match_expression(state, tokens, ast) {
+                Some(new_state) => {
+                    state = new_state;
+                    nodes.push(state.node_i-1);
+                },
+                None => panic!("Expected expression after comma in function call"),
+            };
+        }
+        break;
+    }
+
+    match &tokens[state.token_i] {
+        Token::RParen => (),
+        _ => panic!("Function missing closing )"),
+    };
+    state.step_token();
+
+    let symbol = Symbol::Expression(Expression::Function(String::clone(identifier)));
+    ast.set_node(state.node_i, &symbol, Some(&nodes));
+    state.step_node();
+
+    return Some(state);
 }
 
 fn match_expression_terminal(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {

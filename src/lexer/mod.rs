@@ -60,6 +60,8 @@ impl<'a> Lexer<'a> {
         while let Some(&c) = self.peek_char() {
             if c.is_alphabetic() {
                 word.push(self.read_char().unwrap());
+            } else if c == '_' {
+                word.push(self.read_char().unwrap());
             } else {
                 break;
             }
