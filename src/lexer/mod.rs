@@ -171,6 +171,7 @@ impl<'a> Lexer<'a> {
                 None => break,
             }
         }
+        self.tokens.push(Token::End);
     }
 
     pub fn get_tokens(&self) -> &Vec<Token> {

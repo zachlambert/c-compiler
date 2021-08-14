@@ -87,6 +87,7 @@ pub enum Token {
     Keyword(Keyword),
     Identifier(String),
     Illegal,
+    End,
 }
 
 impl fmt::Display for Token {
@@ -126,6 +127,7 @@ impl fmt::Display for Token {
             Token::Keyword(keyword) => write!(fmt, "Keyword({})", keyword),
             Token::Identifier(identifier) => write!(fmt, "Identifier({})", identifier),
             Token::Illegal => write!(fmt, "Illegal"),
+            Token::End => write!(fmt, "End"),
         }
     }
 }

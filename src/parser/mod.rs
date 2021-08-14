@@ -182,6 +182,16 @@ impl ParserState {
     pub fn step_token(&mut self) {
         self.token_i+=1;
     }
+    pub fn peek_token<'a>(&self, tokens: &'a Vec<Token>) -> &'a Token {
+        if self.token_i >= tokens.len() {
+            panic!("No tokens left. Should stop at the End token.");
+        } else {
+            return &tokens[self.token_i];
+        }
+    }
+    pub fn push_last_node(&self, nodes: &mut Vec<usize>) {
+        nodes.push(self.node_i-1);
+    }
 }
 
 impl Ast {
@@ -265,13 +275,13 @@ fn match_expression_function(start: ParserState, tokens: &Vec<Token>, ast: &mut 
     let mut state = start;
     let mut nodes: Vec<usize> = Vec::new();
 
-    let identifier = match &tokens[state.token_i] {
+    let identifier = match state.peek_token(tokens) {
         Token::Identifier(identifier) => identifier,
         _ => return None,
     };
     state.step_token();
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::LParen => (),
         _ => return None,
     };
@@ -281,12 +291,12 @@ fn match_expression_function(start: ParserState, tokens: &Vec<Token>, ast: &mut 
         match match_expression(state, tokens, ast) {
             Some(new_state) => {
                 state = new_state;
-                nodes.push(state.node_i-1);
+                state.push_last_node(&mut nodes);
             },
             None => break,
         };
         loop {
-            match &tokens[state.token_i] {
+            match state.peek_token(tokens) {
                 Token::Comma => (),
                 _ => break,
             };
@@ -294,7 +304,7 @@ fn match_expression_function(start: ParserState, tokens: &Vec<Token>, ast: &mut 
             match match_expression(state, tokens, ast) {
                 Some(new_state) => {
                     state = new_state;
-                    nodes.push(state.node_i-1);
+                    state.push_last_node(&mut nodes);
                 },
                 None => panic!("Expected expression after comma in function call"),
             };
@@ -302,7 +312,7 @@ fn match_expression_function(start: ParserState, tokens: &Vec<Token>, ast: &mut 
         break;
     }
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::RParen => (),
         _ => panic!("Function missing closing )"),
     };
@@ -331,7 +341,7 @@ fn match_expression_enclosed(start: ParserState, tokens: &Vec<Token>, ast: &mut 
     }
 
     // Check for (<expresion>)
-    let expression = match &tokens[state.token_i] {
+    let expression = match state.peek_token(tokens) {
         Token::LParen => {
             state.step_token();
             match match_expression(state, tokens, ast) {
@@ -340,7 +350,7 @@ fn match_expression_enclosed(start: ParserState, tokens: &Vec<Token>, ast: &mut 
                 }
                 None => panic!("No expression within ()"),
             }
-            match &tokens[state.token_i] {
+            match state.peek_token(tokens) {
                 Token::RParen => (),
                 _ => panic!("No closing )"),
             }
@@ -364,7 +374,7 @@ fn match_expression_enclosed(start: ParserState, tokens: &Vec<Token>, ast: &mut 
 
 fn match_binary_op(start: ParserState, tokens: &Vec<Token>) -> Option<(ParserState, BinaryOp, u8)> {
     let mut state = start;
-    let (op, priority) = match &tokens[state.token_i] {
+    let (op, priority) = match state.peek_token(tokens) {
         Token::Plus => (BinaryOp::Add, 53),
         Token::Minus => (BinaryOp::Subtract, 52),
         Token::Asterisk => (BinaryOp::Multiply, 51),
@@ -416,11 +426,11 @@ fn match_expression_binary_chain(start: ParserState, tokens: &Vec<Token>, ast: &
 
     // Higher priority. Create binary expression, then return.
     let mut nodes: Vec<usize> = Vec::new();
-    nodes.push(state.node_i-1);
+    state.push_last_node(&mut nodes);
 
     state = match_expression_binary_chain(state, tokens, ast, op_priority)
         .expect("Missing expression after binary operation");
-    nodes.push(state.node_i-1);
+    state.push_last_node(&mut nodes);
 
     let symbol = Symbol::Expression(Expression::BinaryOp(op));
     ast.set_node(state.node_i, &symbol, Some(&nodes));
@@ -442,7 +452,7 @@ fn match_expression_unary_op(start: ParserState, tokens: &Vec<Token>, ast: &mut 
 
     let mut state = match_expression_binary_chain(state, tokens, ast, priority)
         .expect("Expected expression after unary opeation");
-    nodes.push(state.node_i-1);
+    state.push_last_node(&mut nodes);
 
     let symbol = Symbol::Expression(Expression::UnaryOp(unary_op));
     ast.set_node(state.node_i, &symbol, Some(&nodes));
@@ -458,7 +468,7 @@ fn match_expression(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> O
     match match_expression_enclosed(state, tokens, ast) {
         Some(new_state) => {
             state = new_state;
-            nodes.push(state.node_i-1);
+            state.push_last_node(&mut nodes);
         },
         None => return None,
     }
@@ -472,13 +482,13 @@ fn match_expression(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> O
         state = new_state;
         state = match_expression_binary_chain(state, tokens, ast, op_priority)
             .expect("Missing expression after binary operator");
-        nodes.push(state.node_i-1);
+        state.push_last_node(&mut nodes);
 
         let symbol = Symbol::Expression(Expression::BinaryOp(op));
         ast.set_node(state.node_i, &symbol, Some(&nodes));
         state.step_node();
         nodes.clear();
-        nodes.push(state.node_i-1);
+        state.push_last_node(&mut nodes);
     }
 
     Some(state)
@@ -487,7 +497,7 @@ fn match_expression(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> O
 fn match_statement_declare(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
     let mut state = start;
 
-    let init_type = match &tokens[state.token_i] {
+    let init_type = match state.peek_token(tokens) {
         Token::Keyword(keyword) => match keyword {
             Keyword::Primitive(primitive) => Type::Primitive(Primitive::clone(primitive)),
             _ => return None,
@@ -497,13 +507,13 @@ fn match_statement_declare(start: ParserState, tokens: &Vec<Token>, ast: &mut As
     };
     state.step_token();
 
-    let identifier = match &tokens[state.token_i] {
+    let identifier = match state.peek_token(tokens) {
         Token::Identifier(identifier) => identifier,
         _ => return None,
     };
     state.step_token();
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::Semicolon => (),
         _ => return None,
     };
@@ -523,7 +533,7 @@ fn match_statement_initialise(start: ParserState, tokens: &Vec<Token>, ast: &mut
     let mut state = start;
     let mut nodes: Vec<usize> = Vec::new();
 
-    let init_type = match &tokens[state.token_i] {
+    let init_type = match state.peek_token(tokens) {
         Token::Keyword(keyword) => match keyword {
             Keyword::Primitive(primitive) => Type::Primitive(Primitive::clone(primitive)),
             _ => return None,
@@ -533,13 +543,13 @@ fn match_statement_initialise(start: ParserState, tokens: &Vec<Token>, ast: &mut
     };
     state.step_token();
 
-    let identifier = match &tokens[state.token_i] {
+    let identifier = match state.peek_token(tokens) {
         Token::Identifier(identifier) => identifier,
         _ => return None,
     };
     state.step_token();
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::Equals => (),
         _ => return None,
     };
@@ -548,12 +558,12 @@ fn match_statement_initialise(start: ParserState, tokens: &Vec<Token>, ast: &mut
     match match_expression(state, tokens, ast) {
         Some(new_state) => {
             state = new_state;
-            nodes.push(state.node_i-1);
+            state.push_last_node(&mut nodes);
         },
         None => return None,
     }
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::Semicolon => (),
         _ => return None,
     };
@@ -573,13 +583,13 @@ fn match_statement_assign(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast
     let mut state = start;
     let mut nodes: Vec<usize> = Vec::new();
 
-    let identifier = match &tokens[state.token_i] {
+    let identifier = match state.peek_token(tokens) {
         Token::Identifier(identifier) => identifier,
         _ => return None,
     };
     state.step_token();
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::Equals => (),
         _ => return None,
     };
@@ -588,12 +598,12 @@ fn match_statement_assign(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast
     match match_expression(state, tokens, ast) {
         Some(new_state) => {
             state = new_state;
-            nodes.push(state.node_i-1);
+            state.push_last_node(&mut nodes);
         },
         None => return None,
     }
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::Semicolon => (),
         _ => return None,
     };
@@ -610,7 +620,7 @@ fn match_statement_return(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast
     let mut state = start;
     let mut nodes: Vec<usize> = Vec::new();
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::Keyword(keyword) => match keyword {
             Keyword::Return => (),
             _ => return None,
@@ -622,12 +632,12 @@ fn match_statement_return(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast
     match match_expression(state, tokens, ast) {
         Some(new_state) => {
             state = new_state;
-            nodes.push(state.node_i-1);
+            state.push_last_node(&mut nodes);
         },
         None => return None,
     }
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::Semicolon => (),
         _ => return None,
     };
@@ -663,7 +673,7 @@ fn match_statement(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Op
 fn match_argument(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Option<ParserState> {
     let mut state = start;
 
-    let arg_type = match &tokens[state.token_i] {
+    let arg_type = match state.peek_token(tokens) {
         Token::Keyword(keyword) => match keyword {
             Keyword::Primitive(primitive) => Type::Primitive(Primitive::clone(primitive)),
             _ => return None,
@@ -672,7 +682,7 @@ fn match_argument(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     };
     state.step_token();
 
-    let name = match &tokens[state.token_i] {
+    let name = match state.peek_token(tokens) {
         Token::Identifier(name) => name,
         _ => return None,
     };
@@ -693,7 +703,7 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     let mut state = start;
     let mut nodes: Vec<usize> = Vec::new();
 
-    let ret_type = match &tokens[state.token_i] {
+    let ret_type = match state.peek_token(tokens) {
         Token::Keyword(keyword) => match keyword {
             Keyword::Primitive(primitive) => Type::Primitive(Primitive::clone(primitive)),
             _ => panic!("Invalid return type for function"),
@@ -703,13 +713,13 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     };
     state.step_token();
 
-    let name = match &tokens[state.token_i] {
+    let name = match state.peek_token(tokens) {
         Token::Identifier(name) => name,
         _ => return None,
     };
     state.step_token();
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::LParen => (),
         _ => return None,
     }
@@ -718,9 +728,9 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
     match match_argument(state, tokens, ast) {
         Some(new_state) => {
             state = new_state;
-            nodes.push(state.node_i-1);
+            state.push_last_node(&mut nodes);
             loop {
-                match &tokens[state.token_i] {
+                match state.peek_token(tokens) {
                     Token::Comma => (),
                     _ => break,
                 };
@@ -728,7 +738,7 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
                 match match_argument(state, tokens, ast) {
                     Some(new_state) => {
                         state = new_state;
-                        nodes.push(state.node_i-1);
+                        state.push_last_node(&mut nodes);
                     },
                     None => panic!("Expected argument after comma"),
                 };
@@ -737,13 +747,13 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
         None => (),
     }
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::RParen => (),
         _ => return None,
     }
     state.step_token();
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::LCBracket => (),
         _ => return None,
     }
@@ -753,13 +763,13 @@ fn match_function(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opt
         match match_statement(state, tokens, ast) {
             Some(new_state) => {
                 state = new_state;
-                nodes.push(state.node_i-1);
+                state.push_last_node(&mut nodes);
             },
             None => break,
         }
     }
 
-    match &tokens[state.token_i] {
+    match state.peek_token(tokens) {
         Token::RCBracket => (),
         _ => return None,
     }
@@ -780,16 +790,15 @@ fn match_program(start: ParserState, tokens: &Vec<Token>, ast: &mut Ast) -> Opti
     let mut state = start;
     let mut nodes: Vec<usize> = Vec::new();
 
-    // Match function
-    match match_function(state , tokens, ast) {
-        Some(new_state) => {
-            state = new_state;
-            nodes.push(state.node_i-1);
-        },
-        None => {
-            println!("Failed to match function");
-        },
-    };
+    loop {
+        match match_function(state , tokens, ast) {
+            Some(new_state) => {
+                state = new_state;
+                state.push_last_node(&mut nodes);
+            },
+            None => break,
+        };
+    }
 
     let symbol = Symbol::Program;
     ast.set_node(state.node_i, &symbol, Some(&nodes));
