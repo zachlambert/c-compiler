@@ -6,8 +6,10 @@ mod lexer;
 mod parser;
 mod compiler;
 
-use lexer::Lexer;
-use parser::create_ast;
+use lexer::read_tokens;
+use lexer::print_tokens;
+use parser::build_ast;
+use parser::print_ast;
 use compiler::compile_ast;
 
 fn main() {
@@ -21,25 +23,27 @@ fn main() {
     let output_name = &args[2];
     println!("Compiling {}", input_name);
 
+    // 1. Read source file to a string
     let input_file = fs::File::open(input_name)
         .expect("Failed to open file.");
-
     let mut reader = BufReader::new(input_file);
     let mut content = String::new();
     reader.read_to_string(&mut content)
         .expect("Failed to read file.");
 
-    let mut lexer = Lexer::new(&mut content);
-    lexer.read_tokens();
-    lexer.print_tokens();
+    // 2. Read tokens
+    let tokens = read_tokens(&content);
+    print_tokens(&tokens);
 
-    let ast = create_ast(lexer.get_tokens())
+    // 3. Build abstract syntax tree
+    let ast = build_ast(&tokens)
         .expect("Failed to build ast");
-    println!("{}", ast);
+    print_ast(&ast);
 
-    let mut code = String::new();
-    compile_ast(&ast, &mut code);
+    // 4. Compile ast to string
+    let code = compile_ast(&ast);
 
+    // 5. Write code to file
     let output_file = fs::File::create(output_name)
         .expect("Failed to create output file.");
     let mut writer = BufWriter::new(output_file);

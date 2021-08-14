@@ -97,11 +97,13 @@ fn compile_program(ast: &Ast, code: &mut String, parent_i: usize) {
     }
 }
 
-pub fn compile_ast(ast: &Ast, code: &mut String) {
+pub fn compile_ast(ast: &Ast) -> String {
+    let mut code = String::new();
     let node_i = ast.nodes.len() - 1;
     let node = &ast.nodes[node_i];
     match &node.symbol {
-        Symbol::Program => compile_program(ast, code, node_i),
+        Symbol::Program => compile_program(ast, &mut code, node_i),
         _ => panic!("First node isn't program"),
     }
+    code
 }
