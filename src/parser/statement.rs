@@ -39,11 +39,11 @@ fn match_statement_declare(parser: &mut Parser) -> bool {
         }
     };
 
-    let symbol = Construct::Statement(Statement::Declare(
+    let construct = Construct::Statement(Statement::Declare(
         init_type,
         String::clone(identifier)
     ));
-    parser.confirm_node(&symbol);
+    parser.confirm_node(&construct);
 
     return true;
 }
@@ -95,11 +95,11 @@ fn match_statement_initialise(parser: &mut Parser) -> bool {
         }
     };
 
-    let symbol = Construct::Statement(Statement::Initialise(
+    let construct = Construct::Statement(Statement::Initialise(
         init_type,
         String::clone(identifier)
     ));
-    parser.confirm_node(&symbol);
+    parser.confirm_node(&construct);
 
     return true;
 }
@@ -136,8 +136,8 @@ fn match_statement_assign(parser: &mut Parser) -> bool {
         }
     };
 
-    let symbol = Construct::Statement(Statement::Assign(String::clone(identifier)));
-    parser.confirm_node(&symbol);
+    let construct = Construct::Statement(Statement::Assign(String::clone(identifier)));
+    parser.confirm_node(&construct);
 
     return true;
 }
@@ -173,8 +173,8 @@ fn match_statement_return(parser: &mut Parser) -> bool {
 
     println!("HERE");
 
-    let symbol = Construct::Statement(Statement::Return);
-    parser.confirm_node(&symbol);
+    let construct = Construct::Statement(Statement::Return);
+    parser.confirm_node(&construct);
 
     return true;
 }

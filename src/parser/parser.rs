@@ -65,12 +65,12 @@ impl<'a> Parser<'a> {
         self.state.child_i += n;
     }
 
-    pub fn confirm_node(&mut self, symbol: &Construct) {
+    pub fn confirm_node(&mut self, construct: &Construct) {
         let start = self.state_stack.pop()
             .expect("Trying to confirm a node without starting one.");
 
         let child_nodes = &self.children[start.child_i..self.state.child_i];
-        self.ast.set_node(self.state.node_i, symbol, child_nodes);
+        self.ast.set_node(self.state.node_i, construct, child_nodes);
 
         self.state.child_i = start.child_i;
         while self.children.len() > self.state.child_i {

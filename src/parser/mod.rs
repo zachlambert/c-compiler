@@ -39,7 +39,7 @@ pub fn print_ast(ast: &Ast) {
                 for _ in 0..depth {
                     print!("  ");
                 }
-                print!("{}", ast.nodes[node].symbol);
+                print!("{}", ast.nodes[node].construct);
                 match ast.nodes[node].next {
                     Some(next) => {
                         stack.push(next);

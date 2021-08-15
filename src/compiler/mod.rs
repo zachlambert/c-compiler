@@ -1,4 +1,6 @@
 
+mod symbol;
+mod datatype; 
 mod compiler;
 mod program;
 

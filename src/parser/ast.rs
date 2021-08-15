@@ -2,7 +2,7 @@
 use super::construct::Construct;
 
 pub struct Node {
-    pub symbol: Construct,
+    pub construct: Construct,
     pub next: Option<usize>,
     pub child: Option<usize>,
 }
@@ -17,15 +17,15 @@ impl Ast {
         }
     }
 
-    pub fn set_node(&mut self, node_i: usize, symbol: &Construct, children: &[usize]) {
+    pub fn set_node(&mut self, node_i: usize, construct: &Construct, children: &[usize]) {
         if node_i == self.nodes.len() {
             self.nodes.push( Node {
-                symbol: Construct::clone(symbol),
+                construct: Construct::clone(construct),
                 next: Option::None,
                 child: Option::None,
             });
         } else if node_i < self.nodes.len() {
-            self.nodes[node_i].symbol = Construct::clone(symbol);
+            self.nodes[node_i].construct = Construct::clone(construct);
             self.nodes[node_i].child = Option::None;
             self.nodes[node_i].next = Option::None;
         } else {

@@ -43,8 +43,8 @@ fn match_expression_function(parser: &mut Parser) -> bool {
         _ => panic!("Function missing closing )"),
     };
 
-    let symbol = Construct::Expression(Expression::Function(String::clone(identifier)));
-    parser.confirm_node(&symbol);
+    let construct = Construct::Expression(Expression::Function(String::clone(identifier)));
+    parser.confirm_node(&construct);
 
     return true;
 }
@@ -82,8 +82,8 @@ fn match_expression_enclosed(parser: &mut Parser) -> bool {
 
     // Create node for Constant or Identifier
     parser.start_node();
-    let symbol = Construct::Expression(expression);
-    parser.confirm_node(&symbol);
+    let construct = Construct::Expression(expression);
+    parser.confirm_node(&construct);
 
     return true;
 }
@@ -142,8 +142,8 @@ fn match_expression_binary_chain(parser: &mut Parser, priority: u8) -> bool {
         panic!("Missing expression after binary operation");
     }
 
-    let symbol = Construct::Expression(Expression::BinaryOp(op));
-    parser.confirm_node(&symbol);
+    let construct = Construct::Expression(Expression::BinaryOp(op));
+    parser.confirm_node(&construct);
 
     return true;
 }
@@ -164,8 +164,8 @@ fn match_expression_unary_op(parser: &mut Parser) -> bool {
         panic!("Expected expression after unary opeation");
     }
 
-    let symbol = Construct::Expression(Expression::UnaryOp(unary_op));
-    parser.confirm_node(&symbol);
+    let construct = Construct::Expression(Expression::UnaryOp(unary_op));
+    parser.confirm_node(&construct);
 
     return true;
 }
@@ -191,8 +191,8 @@ pub fn match_expression(parser: &mut Parser) -> bool {
             panic!("Missing expression after binary operator");
         }
 
-        let symbol = Construct::Expression(Expression::BinaryOp(op));
-        parser.confirm_node(&symbol);
+        let construct = Construct::Expression(Expression::BinaryOp(op));
+        parser.confirm_node(&construct);
     }
 
     return true;

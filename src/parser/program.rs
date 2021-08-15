@@ -34,8 +34,8 @@ fn match_argument(parser: &mut Parser) -> bool {
         name: String::clone(name),
         arg_type: arg_type,
     };
-    let symbol = Construct::Argument(argument);
-    parser.confirm_node(&symbol);
+    let construct = Construct::Argument(argument);
+    parser.confirm_node(&construct);
 
     return true;
 }
@@ -117,8 +117,8 @@ fn match_function(parser: &mut Parser) -> bool {
         name: String::clone(name),
         ret_type: ret_type,
     };
-    let symbol = Construct::Function(function);
-    parser.confirm_node(&symbol);
+    let construct = Construct::Function(function);
+    parser.confirm_node(&construct);
 
     return true;
 }
@@ -132,8 +132,8 @@ pub fn match_program(parser: &mut Parser) -> bool {
         }
     }
 
-    let symbol = Construct::Program;
-    parser.confirm_node(&symbol);
+    let construct = Construct::Program;
+    parser.confirm_node(&construct);
 
     return true;
 }
