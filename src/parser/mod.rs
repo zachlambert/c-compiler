@@ -1,7 +1,7 @@
 
 use crate::lexer::token::*;
 
-pub mod symbol;
+pub mod construct;
 pub mod ast;
 mod parser;
 mod program;

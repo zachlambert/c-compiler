@@ -1,6 +1,6 @@
 
 use crate::lexer::token::*;
-use super::symbol::*;
+use super::construct::*;
 use super::parser::Parser;
 
 fn match_expression_function(parser: &mut Parser) -> bool {
@@ -43,7 +43,7 @@ fn match_expression_function(parser: &mut Parser) -> bool {
         _ => panic!("Function missing closing )"),
     };
 
-    let symbol = Symbol::Expression(Expression::Function(String::clone(identifier)));
+    let symbol = Construct::Expression(Expression::Function(String::clone(identifier)));
     parser.confirm_node(&symbol);
 
     return true;
@@ -82,7 +82,7 @@ fn match_expression_enclosed(parser: &mut Parser) -> bool {
 
     // Create node for Constant or Identifier
     parser.start_node();
-    let symbol = Symbol::Expression(expression);
+    let symbol = Construct::Expression(expression);
     parser.confirm_node(&symbol);
 
     return true;
@@ -142,7 +142,7 @@ fn match_expression_binary_chain(parser: &mut Parser, priority: u8) -> bool {
         panic!("Missing expression after binary operation");
     }
 
-    let symbol = Symbol::Expression(Expression::BinaryOp(op));
+    let symbol = Construct::Expression(Expression::BinaryOp(op));
     parser.confirm_node(&symbol);
 
     return true;
@@ -164,7 +164,7 @@ fn match_expression_unary_op(parser: &mut Parser) -> bool {
         panic!("Expected expression after unary opeation");
     }
 
-    let symbol = Symbol::Expression(Expression::UnaryOp(unary_op));
+    let symbol = Construct::Expression(Expression::UnaryOp(unary_op));
     parser.confirm_node(&symbol);
 
     return true;
@@ -191,7 +191,7 @@ pub fn match_expression(parser: &mut Parser) -> bool {
             panic!("Missing expression after binary operator");
         }
 
-        let symbol = Symbol::Expression(Expression::BinaryOp(op));
+        let symbol = Construct::Expression(Expression::BinaryOp(op));
         parser.confirm_node(&symbol);
     }
 

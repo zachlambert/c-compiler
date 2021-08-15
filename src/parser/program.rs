@@ -1,6 +1,6 @@
 
 use crate::lexer::token::*;
-use super::symbol::*;
+use super::construct::*;
 use super::parser::Parser;
 
 use super::statement::match_statement;
@@ -34,7 +34,7 @@ fn match_argument(parser: &mut Parser) -> bool {
         name: String::clone(name),
         arg_type: arg_type,
     };
-    let symbol = Symbol::Argument(argument);
+    let symbol = Construct::Argument(argument);
     parser.confirm_node(&symbol);
 
     return true;
@@ -117,7 +117,7 @@ fn match_function(parser: &mut Parser) -> bool {
         name: String::clone(name),
         ret_type: ret_type,
     };
-    let symbol = Symbol::Function(function);
+    let symbol = Construct::Function(function);
     parser.confirm_node(&symbol);
 
     return true;
@@ -132,7 +132,7 @@ pub fn match_program(parser: &mut Parser) -> bool {
         }
     }
 
-    let symbol = Symbol::Program;
+    let symbol = Construct::Program;
     parser.confirm_node(&symbol);
 
     return true;

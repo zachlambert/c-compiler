@@ -135,7 +135,7 @@ impl fmt::Display for Expression {
 }
 
 #[derive(Clone)]
-pub enum Symbol {
+pub enum Construct {
     Program,
     Function(Function),
     Statement(Statement),
@@ -143,14 +143,14 @@ pub enum Symbol {
     Argument(Argument),
 }
 
-impl fmt::Display for Symbol {
+impl fmt::Display for Construct {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Symbol::Program => write!(fmt, "Program"),
-            Symbol::Function(function) => write!(fmt, "{}", function),
-            Symbol::Statement(statement) => write!(fmt, "{}", statement),
-            Symbol::Expression(expression) => write!(fmt, "{}", expression),
-            Symbol::Argument(argument) => write!(fmt, "{}", argument),
+            Construct::Program => write!(fmt, "Program"),
+            Construct::Function(function) => write!(fmt, "{}", function),
+            Construct::Statement(statement) => write!(fmt, "{}", statement),
+            Construct::Expression(expression) => write!(fmt, "{}", expression),
+            Construct::Argument(argument) => write!(fmt, "{}", argument),
         }
     }
 }

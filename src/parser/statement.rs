@@ -1,6 +1,6 @@
 
 use crate::lexer::token::*;
-use super::symbol::*;
+use super::construct::*;
 use super::parser::Parser;
 
 use super::expression::match_expression;
@@ -39,7 +39,7 @@ fn match_statement_declare(parser: &mut Parser) -> bool {
         }
     };
 
-    let symbol = Symbol::Statement(Statement::Declare(
+    let symbol = Construct::Statement(Statement::Declare(
         init_type,
         String::clone(identifier)
     ));
@@ -95,7 +95,7 @@ fn match_statement_initialise(parser: &mut Parser) -> bool {
         }
     };
 
-    let symbol = Symbol::Statement(Statement::Initialise(
+    let symbol = Construct::Statement(Statement::Initialise(
         init_type,
         String::clone(identifier)
     ));
@@ -136,7 +136,7 @@ fn match_statement_assign(parser: &mut Parser) -> bool {
         }
     };
 
-    let symbol = Symbol::Statement(Statement::Assign(String::clone(identifier)));
+    let symbol = Construct::Statement(Statement::Assign(String::clone(identifier)));
     parser.confirm_node(&symbol);
 
     return true;
@@ -173,7 +173,7 @@ fn match_statement_return(parser: &mut Parser) -> bool {
 
     println!("HERE");
 
-    let symbol = Symbol::Statement(Statement::Return);
+    let symbol = Construct::Statement(Statement::Return);
     parser.confirm_node(&symbol);
 
     return true;

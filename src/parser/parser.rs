@@ -2,7 +2,7 @@
 use crate::lexer::token::Token;
 
 use super::ast::Ast;
-use super::symbol::Symbol;
+use super::construct::Construct;
 
 #[derive(Clone, Copy)]
 struct State {
@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
         self.state.child_i += n;
     }
 
-    pub fn confirm_node(&mut self, symbol: &Symbol) {
+    pub fn confirm_node(&mut self, symbol: &Construct) {
         let start = self.state_stack.pop()
             .expect("Trying to confirm a node without starting one.");
 
