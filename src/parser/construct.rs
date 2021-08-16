@@ -2,43 +2,59 @@ use std::fmt;
 
 use crate::lexer::token::*;
 
-#[derive(Clone)]
-pub struct Function {
-    pub name: String,
-    pub ret_type: Type,
-}
-
-impl fmt::Display for Function {
-    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "Function[ret_type: {}, name: {}]", self.ret_type, self.name)
-    }
-}
-
-#[derive(Clone)]
-pub enum Type {
-    Primitive(Primitive),
-    Identifier(String),
-}
-
-impl fmt::Display for Type {
-    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Type::Primitive(primitive) => write!(fmt, "Type({})", primitive),
-            Type::Identifier(identifier) => write!(fmt, "Type({})", identifier),
-        }
-    }
-}
+// ===== FUNCTIONS =====
 
 #[derive(Clone)]
 pub struct Argument {
     pub name: String,
-    pub arg_type: Type,
+    pub arg_type: Datatype,
 }
 
 impl fmt::Display for Argument {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt, "Argument[arg_type: {}, name: {}]", self.arg_type, self.name)
     }
+}
+
+#[derive(Clone)]
+pub enum Datatype {
+    Unresolved(String),
+    Primitive(Primitive),
+    Pointer,
+    Struct,
+}
+
+impl fmt::Display for Datatype {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Datatype::Unresolved(identifier) => write!(fmt, "Datatype(Unresolved: {})", identifier),
+            Datatype::Primitive(primitive) => write!(fmt, "Datatype({})", primitive),
+            Datatype::Pointer => write!(fmt, "Datatype(Pointer)"),
+            Datatype::Struct => write!(fmt, "Datatype(Struct)"),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub enum Qualifier {
+    Const,
+    Static,
+    Extern,
+}
+
+impl fmt::Display for Qualifier {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Qualifier::Const => write!(fmt, "Qualifier(const)"),
+            Qualifier::Static => write!(fmt, "Qualifier(static)"),
+            Qualifier::Extern => write!(fmt, "Qualifier(extern)"),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct Typedef {
+    pub name: String,
 }
 
 
@@ -86,8 +102,8 @@ impl fmt::Display for BinaryOp {
 
 #[derive(Clone)]
 pub enum Statement {
-    Declare(Type, String),    // <type> <identifier>;
-    Initialise(Type, String), // <type> <identifier> = <expression>;
+    Declare(Datatype, String),    // <type> <identifier>;
+    Initialise(Datatype, String), // <type> <identifier> = <expression>;
     Assign(String),           // <identifier> = <expression>;
     Return,                   // return <expression>;
 }
@@ -115,17 +131,30 @@ impl fmt::Display for Statement {
 
 #[derive(Clone)]
 pub enum Expression {
-    Function(String), // n child expressions for args
-    UnaryOp(UnaryOp), // one child expression
-    BinaryOp(BinaryOp), // Two child expressions
-    Constant(Constant), // Terminal
-    Identifier(String), // Terminal
+    Function,
+    // - 0: Identifier(name) => FunctionSignature
+    // - 1: First argument
+    // - 2: Seconds argument
+    // - 3: etc...
+
+    UnaryOp(UnaryOp),
+    // - 0: Argument
+
+    BinaryOp(BinaryOp),
+    // - 0: Left argument
+    // - 1: Right argument
+
+    Constant(Constant),
+    // Terminal
+
+    Identifier(String),
+    // Terminal
 }
 
 impl fmt::Display for Expression {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Expression::Function(name) => write!(fmt, "Expression(function, name: {})", name),
+            Expression::Function => write!(fmt, "Expression(function)"),
             Expression::UnaryOp(op) => write!(fmt, "Expression({})", op),
             Expression::BinaryOp(op) => write!(fmt, "Expression({})", op),
             Expression::Constant(constant) => write!(fmt, "Expression({})", constant),
@@ -137,10 +166,12 @@ impl fmt::Display for Expression {
 #[derive(Clone)]
 pub enum Construct {
     Program,
-    Function(Function),
+    FunctionSignature,
     Statement(Statement),
     Expression(Expression),
     Argument(Argument),
+    Datatype(Datatype),
+    Identifier(String),
 }
 
 impl fmt::Display for Construct {
