@@ -1,35 +1,42 @@
 use std::fmt;
 
 #[derive(Clone)]
-pub enum Primitive {
-    Int,
-    Float,
-    Double,
-    Char,
-}
-
-impl fmt::Display for Primitive {
-    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Primitive::Int => write!(fmt, "Primitive(int)"),
-            Primitive::Float => write!(fmt, "Primitive(float)"),
-            Primitive::Double => write!(fmt, "Primitive(double)"),
-            Primitive::Char => write!(fmt, "Primitive(char)"),
-        }
-    }
-}
-
-#[derive(Clone)]
 pub enum Keyword {
-    Primitive(Primitive),
+    U8,
+    U16,
+    U32,
+    U64,
+    I8,
+    I16,
+    I32,
+    I64,
+    F32,
+    F64,
+    C8,
+    Mut,
     Return,
+    Function,
+    Struct,
 }
 
 impl fmt::Display for Keyword {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Keyword::Primitive(primitive) => write!(fmt, "{}", primitive),
-            Keyword::Return => write!(fmt, "Return"),
+            Keyword::U8 => write!(fmt, "Keyword(u8)"),
+            Keyword::U16 => write!(fmt, "Keyword(u16)"),
+            Keyword::U32 => write!(fmt, "Keyword(u32)"),
+            Keyword::U64 => write!(fmt, "Keyword(u64)"),
+            Keyword::I8 => write!(fmt, "Keyword(i8)"),
+            Keyword::I16 => write!(fmt, "Keyword(i16)"),
+            Keyword::I32 => write!(fmt, "Keyword(i32)"),
+            Keyword::I64 => write!(fmt, "Keyword(i64)"),
+            Keyword::F32 => write!(fmt, "Keyword(f32)"),
+            Keyword::F64 => write!(fmt, "Keyword(f64)"),
+            Keyword::C8 => write!(fmt, "Keyword(c8)"),
+            Keyword::Mut => write!(fmt, "Keyword(mut)"),
+            Keyword::Return => write!(fmt, "Keyword(return)"),
+            Keyword::Function => write!(fmt, "Keyword(function)"),
+            Keyword::Struct => write!(fmt, "Keyword(struct)"),
         }
     }
 }
@@ -82,6 +89,15 @@ pub enum Token {
     Exclamation, // !
     Question, //    ?
     Grave, //       `
+
+    // Multi-character tokens
+    LArrow, //          <-
+    RArrow, //          ->
+    DoubleAmpersand, // &&
+    DoubleVBar,      // ||
+    DoubleEquals, //    ==
+    DoubleRSlash, //    //
+
     Constant(Constant),
     Keyword(Keyword),
     Identifier(String),
@@ -122,6 +138,14 @@ impl fmt::Display for Token {
             Token::Exclamation => write!(fmt, "!"),
             Token::Question => write!(fmt, "?"),
             Token::Grave => write!(fmt, "`"),
+
+            Token::LArrow => write!(fmt, "<-"),
+            Token::RArrow => write!(fmt, "->"),
+            Token::DoubleAmpersand => write!(fmt, "&&"),
+            Token::DoubleVBar => write!(fmt, "||"),
+            Token::DoubleEquals => write!(fmt, "=="),
+            Token::DoubleRSlash => write!(fmt, "//"),
+
             Token::Constant(constant) => write!(fmt, "Constant({})", constant),
             Token::Keyword(keyword) => write!(fmt, "Keyword({})", keyword),
             Token::Identifier(identifier) => write!(fmt, "Identifier({})", identifier),

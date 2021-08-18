@@ -7,6 +7,8 @@ mod parser;
 mod program;
 mod statement;
 mod expression;
+mod datatype;
+mod common;
 
 use ast::Ast;
 use parser::Parser;

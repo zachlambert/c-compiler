@@ -2,66 +2,86 @@ use std::fmt;
 
 use crate::lexer::token::*;
 
-// ===== FUNCTIONS =====
+
+// ===== DATATYPES and QUALIFIERS =====
 
 #[derive(Clone)]
-pub struct Argument {
-    pub name: String,
-    pub arg_type: Datatype,
+pub enum Primitive {
+    I8,
+    I16,
+    I32,
+    I64,
+    U8,
+    U16,
+    U32,
+    U64,
+    F32,
+    F64,
+    C8,
 }
 
-impl fmt::Display for Argument {
+impl fmt::Display for Primitive {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
-        write!(fmt, "Argument[arg_type: {}, name: {}]", self.arg_type, self.name)
+        match self {
+            Primitive::I8 => write!(fmt, "Primitive(i8)"),
+            Primitive::I16 => write!(fmt, "Primitive(i16)"),
+            Primitive::I32 => write!(fmt, "Primitive(i32)"),
+            Primitive::I64 => write!(fmt, "Primitive(i64)"),
+            Primitive::U8 => write!(fmt, "Primitive(u8)"),
+            Primitive::U16 => write!(fmt, "Primitive(u16)"),
+            Primitive::U32 => write!(fmt, "Primitive(u32)"),
+            Primitive::U64 => write!(fmt, "Primitive(u64)"),
+            Primitive::F32 => write!(fmt, "Primitive(f32)"),
+            Primitive::F64 => write!(fmt, "Primitive(f64)"),
+            Primitive::C8 => write!(fmt, "Primitive(c8)"),
+        }
     }
 }
 
 #[derive(Clone)]
 pub enum Datatype {
-    Unresolved(String),
-    Primitive(Primitive),
+    Terminal,
+    // { qualifier } , ( primitive | identifier | struct )
+
     Pointer,
-    Struct,
+    // { qualifier } , datatype
+
+    Inferred,
+    // Terminal
 }
 
 impl fmt::Display for Datatype {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Datatype::Unresolved(identifier) => write!(fmt, "Datatype(Unresolved: {})", identifier),
-            Datatype::Primitive(primitive) => write!(fmt, "Datatype({})", primitive),
+            Datatype::Terminal => write!(fmt, "Datatype(Terminal)"),
             Datatype::Pointer => write!(fmt, "Datatype(Pointer)"),
-            Datatype::Struct => write!(fmt, "Datatype(Struct)"),
+            Datatype::Inferred => write!(fmt, "Datatype(Inferred)"),
         }
     }
 }
 
 #[derive(Clone)]
 pub enum Qualifier {
-    Const,
-    Static,
-    Extern,
+    Mut,
 }
 
 impl fmt::Display for Qualifier {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Qualifier::Const => write!(fmt, "Qualifier(const)"),
-            Qualifier::Static => write!(fmt, "Qualifier(static)"),
-            Qualifier::Extern => write!(fmt, "Qualifier(extern)"),
+            Qualifier::Mut => write!(fmt, "Qualifier(mut)"),
         }
     }
 }
 
-#[derive(Clone)]
-pub struct Typedef {
-    pub name: String,
-}
 
+// ===== OPERATIONS =====
 
 #[derive(Clone)]
 pub enum UnaryOp {
     Negate,
     LogicalNot,
+    Deref, // *x
+    Ref, // &x
 }
 
 impl fmt::Display for UnaryOp {
@@ -69,6 +89,8 @@ impl fmt::Display for UnaryOp {
         match self {
             UnaryOp::Negate => write!(fmt, "UnaryOp(Negate)"),
             UnaryOp::LogicalNot => write!(fmt, "UnaryOp(LogicalNot)"),
+            UnaryOp::Deref => write!(fmt, "UnaryOp(Deref)"),
+            UnaryOp::Ref => write!(fmt, "UnaryOp(Ref)"),
         }
     }
 }
@@ -79,10 +101,15 @@ pub enum BinaryOp {
     Subtract,
     Multiply,
     Divide,
+
     LogicalAnd,
     LogicalOr,
+    LogicalEquals,
+
     BitwiseAnd,
     BitwiseOr,
+
+    Access, // my_struct.member
 }
 
 impl fmt::Display for BinaryOp {
@@ -92,39 +119,44 @@ impl fmt::Display for BinaryOp {
             BinaryOp::Subtract => write!(fmt, "BinaryOp(Subtract)"),
             BinaryOp::Multiply => write!(fmt, "BinaryOp(Multiply)"),
             BinaryOp::Divide => write!(fmt, "BinaryOp(Divide)"),
+
             BinaryOp::LogicalAnd => write!(fmt, "BinaryOp(LogicalAnd)"),
             BinaryOp::LogicalOr => write!(fmt, "BinaryOp(LogicalOr)"),
+            BinaryOp::LogicalEquals => write!(fmt, "BinaryOp(LogicalEquals)"),
+
             BinaryOp::BitwiseAnd => write!(fmt, "BinaryOp(BitwiseAnd)"),
             BinaryOp::BitwiseOr => write!(fmt, "BinaryOp(BitwiseOr)"),
+
+            BinaryOp::Access => write!(fmt, "BinaryOp(Access)"),
         }
     }
 }
 
+
+// ===== STATEMENTS and EXPRESSIONS =====
+
 #[derive(Clone)]
 pub enum Statement {
-    Declare(Datatype, String),    // <type> <identifier>;
-    Initialise(Datatype, String), // <type> <identifier> = <expression>;
-    Assign(String),           // <identifier> = <expression>;
-    Return,                   // return <expression>;
+    Declare,
+    // identifier , ":" datatype , ";"
+
+    Initialise,
+    // identifier , ":" , [ type ] , "=" , expression , ";"
+
+    Assign,
+    // expression , "=" ,  expression , ";"
+
+    Return,
+    // expression
 }
 
 impl fmt::Display for Statement {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Statement::Declare(statement_type, identifier) =>
-                write!(fmt,
-                       "Statement[declare, type: {}, identifier: {}]",
-                       statement_type, identifier),
-            Statement::Initialise(statement_type, identifier) =>
-                write!(fmt,
-                       "Statement[initialise, type: {}, identifier: {}]",
-                       statement_type, identifier),
-            Statement::Assign(identifier) =>
-                write!(fmt,
-                       "Statement[assign, identifier: {}]",
-                       identifier),
-            Statement::Return =>
-                write!(fmt, "Statement[return]"),
+            Statement::Declare => write!(fmt, "Statement(declare)"),
+            Statement::Initialise => write!(fmt, "Statement(initialise)"),
+            Statement::Assign => write!(fmt, "Statement(assign)"),
+            Statement::Return => write!(fmt, "Statement(return)"),
         }
     }
 }
@@ -132,22 +164,21 @@ impl fmt::Display for Statement {
 #[derive(Clone)]
 pub enum Expression {
     Function,
-    // - 0: Identifier(name) => FunctionSignature
-    // - 1: First argument
-    // - 2: Seconds argument
-    // - 3: etc...
+    // identifier , { argument }
 
-    UnaryOp(UnaryOp),
-    // - 0: Argument
+    UnaryOp(UnaryOp), // Operator
+    // operand
 
-    BinaryOp(BinaryOp),
-    // - 0: Left argument
-    // - 1: Right argument
+    BinaryOp(BinaryOp), // Operator
+    // left operand , right operand
 
     Constant(Constant),
     // Terminal
 
     Identifier(String),
+    // Terminal
+
+    Symbol(usize), // Symbol index. Found from identifier + scope later.
     // Terminal
 }
 
@@ -159,29 +190,69 @@ impl fmt::Display for Expression {
             Expression::BinaryOp(op) => write!(fmt, "Expression({})", op),
             Expression::Constant(constant) => write!(fmt, "Expression({})", constant),
             Expression::Identifier(identifier) => write!(fmt, "Expression(Identifier({}))", identifier),
+            Expression::Symbol(index) => write!(fmt, "Expression(Symbol({}))", index),
         }
     }
 }
 
+
+// ===== CONSTRUCTS =====
+
 #[derive(Clone)]
 pub enum Construct {
     Program,
-    FunctionSignature,
-    Statement(Statement),
-    Expression(Expression),
-    Argument(Argument),
+    // { function | struct }
+
+    Function,
+    // identifier , ":" , "=",  "function" , "(" , [ argument , { "," , argument } ] , ")" ,
+    // [ "->" , ( return , ( "(" , {return} , ")" ) ) ] , "{" , { statement } , "}"
+
+    Argument,
+    // identifier , ":" , datatype
+    
+    Returned, // May add named return values in future
+    // datatype
+
+    Statement(Statement), // Statement type
+    // ( Statement::Declare | ... etc )
+
+    Struct,
+    // identifier , { member }
+
+    Member,
+    // identifier , ":" , datatype
+
     Datatype(Datatype),
-    Identifier(String),
+    // ( Datatype::Terminal | ... )
+
+    Qualifier(Qualifier),
+    // Terminal
+
+    Primitive(Primitive),
+    // Terminal
+
+    Identifier(String), // name
+    // Terminal
+
+    Expression(Expression),
+    // ( Expression::Function | ... )
 }
 
 impl fmt::Display for Construct {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Construct::Program => write!(fmt, "Program"),
-            Construct::Function(function) => write!(fmt, "{}", function),
+            Construct::Function => write!(fmt, "Function"),
+            Construct::Argument => write!(fmt, "Argument"),
+            Construct::Returned => write!(fmt, "Returned"),
             Construct::Statement(statement) => write!(fmt, "{}", statement),
+            Construct::Struct => write!(fmt, "Struct"),
+            Construct::Member => write!(fmt, "Member"),
+            Construct::Datatype(datatype) => write!(fmt, "{}", datatype),
+            Construct::Identifier(name) => write!(fmt, "Identifier({})", name),
+            Construct::Qualifier(qualifier) => write!(fmt, "{}", qualifier),
+            Construct::Primitive(primitive) => write!(fmt, "{}", primitive),
             Construct::Expression(expression) => write!(fmt, "{}", expression),
-            Construct::Argument(argument) => write!(fmt, "{}", argument),
         }
     }
 }

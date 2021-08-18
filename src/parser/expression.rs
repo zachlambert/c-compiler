@@ -2,17 +2,15 @@
 use crate::lexer::token::*;
 use super::construct::*;
 use super::parser::Parser;
+use super::common::match_identifier;
 
 fn match_expression_function(parser: &mut Parser) -> bool {
     parser.start_node();
 
-    let identifier = match parser.consume_token() {
-        Token::Identifier(identifier) => identifier,
-        _ => {
-            parser.discard_node();
-            return false;
-        }
-    };
+    if !match_identifier(parser) {
+        parser.discard_node();
+        return false;
+    }
 
     match parser.consume_token() {
         Token::LParen => (),
@@ -43,7 +41,7 @@ fn match_expression_function(parser: &mut Parser) -> bool {
         _ => panic!("Function missing closing )"),
     };
 
-    let construct = Construct::Expression(Expression::Function(String::clone(identifier)));
+    let construct = Construct::Expression(Expression::Function);
     parser.confirm_node(&construct);
 
     return true;
@@ -61,8 +59,9 @@ fn match_expression_enclosed(parser: &mut Parser) -> bool {
     }
 
     // Check for (<expresion>)
-    let expression = match parser.consume_token() {
+    let expression = match parser.peek_token() {
         Token::LParen => {
+            parser.consume_token();
             if !match_expression(parser) {
                 panic!("No expression within ()");
             }
@@ -75,10 +74,10 @@ fn match_expression_enclosed(parser: &mut Parser) -> bool {
         Token::Constant(constant) => Expression::Constant(Constant::clone(constant)),
         Token::Identifier(identifier) => Expression::Identifier(String::clone(identifier)),
         _ => {
-            parser.discard_node();
             return false;
         }
     };
+    parser.consume_token();
 
     // Create node for Constant or Identifier
     parser.start_node();
@@ -94,22 +93,15 @@ fn match_binary_op(parser: &mut Parser) -> Option<(BinaryOp, u8)> {
         Token::Minus => (BinaryOp::Subtract, 52),
         Token::Asterisk => (BinaryOp::Multiply, 51),
         Token::RSlash => (BinaryOp::Divide, 51),
-        Token::Ampersand =>
-            match parser.peek_token() {
-                Token::Ampersand => {
-                    parser.consume_token();
-                    (BinaryOp::LogicalAnd, 42)
-                },
-                _ => (BinaryOp::BitwiseAnd, 31),
-            },
-        Token::VBar =>
-            match parser.peek_token() {
-                Token::VBar => {
-                    parser.consume_token();
-                    (BinaryOp::LogicalOr, 43)
-                },
-                _ => (BinaryOp::BitwiseOr, 32),
-            },
+
+        Token::DoubleAmpersand => (BinaryOp::LogicalAnd, 42),
+        Token::DoubleVBar => (BinaryOp::LogicalOr, 43),
+        Token::DoubleEquals => (BinaryOp::LogicalEquals, 41),
+
+        Token::Ampersand => (BinaryOp::BitwiseAnd, 31),
+        Token::VBar => (BinaryOp::BitwiseOr, 32),
+
+        Token::Period => (BinaryOp::Access, 1),
         _ => return None,
     };
     Some((op, priority))
@@ -117,7 +109,6 @@ fn match_binary_op(parser: &mut Parser) -> Option<(BinaryOp, u8)> {
 
 fn match_expression_binary_chain(parser: &mut Parser, priority: u8) -> bool {
     if !match_expression_enclosed(parser) {
-        parser.discard_node();
         return false;
     }
 
@@ -154,6 +145,8 @@ fn match_expression_unary_op(parser: &mut Parser) -> bool {
     let (unary_op, priority) = match parser.consume_token() {
         Token::Minus => (UnaryOp::Negate, 52),
         Token::Exclamation => (UnaryOp::LogicalNot, 41),
+        Token::Ampersand => (UnaryOp::Ref, 11),
+        Token::Asterisk => (UnaryOp::Deref, 11),
         _ => {
             parser.discard_node();
             return false;
@@ -172,7 +165,6 @@ fn match_expression_unary_op(parser: &mut Parser) -> bool {
 
 pub fn match_expression(parser: &mut Parser) -> bool {
     if !match_expression_enclosed(parser) {
-        parser.discard_node();
         return false;
     }
 
