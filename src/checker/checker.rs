@@ -12,17 +12,38 @@ use std::collections::HashMap;
 // Symbol table is a HashMap of:
 //   name -> index of mapping
 
-struct Mapping<'a> {
+
+#[derive(Clone)]
+pub enum Storage {
+    Local(i64),   // Stack offset
+    Global(String), // Label
+}
+
+#[derive(Clone)]
+pub enum SymbolData {
+    Variable(Storage),
+    Function(String),  // Label
+    Struct,
+}
+
+#[derive(Clone)]
+pub struct Symbol {
     pub node_i: usize,
+    pub data: SymbolData,
+}
+
+struct Mapping {
+    pub symbol: Symbol,
     pub prev: Option<usize>,
-    pub name: &'a String,
+    pub name: String,
 }
 
 pub struct Checker<'a> {
     pub ast: &'a mut Ast,
     table: HashMap<String, Option<usize>>, // mapping index
-    mappings: Vec<Mapping<'a>>,
+    mappings: Vec<Mapping>,
     scope: Vec<usize>, // stack of the start of valid mappings
+    depth: usize,
 }
 
 impl<'a> Checker<'a> {
@@ -32,23 +53,24 @@ impl<'a> Checker<'a> {
             table: HashMap::new(),
             mappings: Vec::new(),
             scope: Vec::new(),
+            depth: 0,
         }
     }
 
-    pub fn find_symbol(&self, name: &String) -> Option<usize> {
+    pub fn find_symbol(&'a self, name: &String) -> Option<&'a Symbol> {
         match self.table[name] {
             Some(index) => {
-                Some(self.mappings[index].node_i)
+                Some(&self.mappings[index].symbol)
             },
             _ => None,
         }
     }
 
-    pub fn add_symbol(&mut self, name: &'a String, node_i: usize) {
+    pub fn add_symbol(&mut self, name: &String, symbol: Symbol) {
         let mapping = Mapping {
-            node_i: node_i,
+            symbol: Symbol::clone(&symbol),
             prev: self.table[name],
-            name: name,
+            name: String::clone(name),
         };
         self.table.insert(String::clone(name), Some(self.mappings.len()));
         self.mappings.push(mapping);
@@ -56,6 +78,7 @@ impl<'a> Checker<'a> {
 
     pub fn increase_scope(&mut self) {
         self.scope.push(self.mappings.len());
+        self.depth += 1;
     }
 
     pub fn decrease_scope(&mut self) {
@@ -64,7 +87,12 @@ impl<'a> Checker<'a> {
         while self.mappings.len() > start {
             let mapping = self.mappings.pop()
                 .expect("Shouldn't be here");
-            self.table.insert(String::clone(mapping.name), mapping.prev);
+            self.table.insert(String::clone(&mapping.name), mapping.prev);
         }
+        self.depth -= 1;
+    }
+
+    pub fn current_depth(&self) -> usize {
+        self.depth
     }
 }

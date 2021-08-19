@@ -177,9 +177,6 @@ pub enum Expression {
 
     Identifier(String),
     // Terminal
-
-    Symbol(usize), // Symbol index. Found from identifier + scope later.
-    // Terminal
 }
 
 impl fmt::Display for Expression {
@@ -190,7 +187,6 @@ impl fmt::Display for Expression {
             Expression::BinaryOp(op) => write!(fmt, "Expression({})", op),
             Expression::Constant(constant) => write!(fmt, "Expression({})", constant),
             Expression::Identifier(identifier) => write!(fmt, "Expression(Identifier({}))", identifier),
-            Expression::Symbol(index) => write!(fmt, "Expression(Symbol({}))", index),
         }
     }
 }
