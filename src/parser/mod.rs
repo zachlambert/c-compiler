@@ -4,7 +4,11 @@ use crate::lexer::token::*;
 pub mod construct;
 pub mod ast;
 mod parser;
+
 mod program;
+mod structure;
+mod function;
+
 mod statement;
 mod expression;
 mod datatype;

@@ -216,8 +216,8 @@ pub enum Construct {
     Statement(Statement), // Statement type
     // ( Statement::Declare | ... etc )
 
-    Struct,
-    // identifier , { member }
+    Structure,
+    // identifier , ":" , "=" , "struct" , { member }
 
     Member,
     // identifier , ":" , datatype
@@ -246,7 +246,7 @@ impl fmt::Display for Construct {
             Construct::Argument => write!(fmt, "Argument"),
             Construct::Returned => write!(fmt, "Returned"),
             Construct::Statement(statement) => write!(fmt, "{}", statement),
-            Construct::Struct => write!(fmt, "Struct"),
+            Construct::Structure => write!(fmt, "Structure"),
             Construct::Member => write!(fmt, "Member"),
             Construct::Datatype(datatype) => write!(fmt, "{}", datatype),
             Construct::Identifier(name) => write!(fmt, "Identifier({})", name),
