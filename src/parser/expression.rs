@@ -89,17 +89,37 @@ fn match_expression_enclosed(parser: &mut Parser) -> bool {
 
 fn match_binary_op(parser: &mut Parser) -> Option<(BinaryOp, u8)> {
     let (op, priority) = match parser.consume_token() {
+        Token::Ampersand => {
+            match parser.peek_token() {
+                Token::Ampersand => {
+                    parser.consume_token();
+                    (BinaryOp::LogicalAnd, 42)
+                }
+                _ => (BinaryOp::BitwiseAnd, 31)
+            }
+        }
+        Token::VBar => {
+            match parser.peek_token() {
+                Token::VBar => {
+                    parser.consume_token();
+                    (BinaryOp::LogicalOr, 43)
+                }
+                _ => (BinaryOp::BitwiseOr, 32)
+            }
+        }
+        Token::Equals => {
+            match parser.peek_token() {
+                Token::Equals => {
+                    parser.consume_token();
+                    (BinaryOp::LogicalEquals, 41)
+                },
+                _ => return None,
+            }
+        }
         Token::Plus => (BinaryOp::Add, 53),
         Token::Minus => (BinaryOp::Subtract, 52),
         Token::Asterisk => (BinaryOp::Multiply, 51),
         Token::RSlash => (BinaryOp::Divide, 51),
-
-        Token::DoubleAmpersand => (BinaryOp::LogicalAnd, 42),
-        Token::DoubleVBar => (BinaryOp::LogicalOr, 43),
-        Token::DoubleEquals => (BinaryOp::LogicalEquals, 41),
-
-        Token::Ampersand => (BinaryOp::BitwiseAnd, 31),
-        Token::VBar => (BinaryOp::BitwiseOr, 32),
 
         Token::Period => (BinaryOp::Access, 1),
         _ => return None,
@@ -121,7 +141,7 @@ fn match_expression_binary_chain(parser: &mut Parser, priority: u8) -> bool {
         }
     };
 
-    if op_priority >= priority {
+    if op_priority > priority {
         parser.rollback_state();
         return true;
     }

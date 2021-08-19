@@ -119,103 +119,10 @@ impl<'a> Lexer<'a> {
         self.skip_whitespace();
         if let Some(c) = self.read_char() {
             match c {
-                '&' => {
-                    match self.peek_char() {
-                        Some(c) => match c {
-                            '&' => {
-                                self.read_char();
-                                Some(Token::DoubleAmpersand)
-                            },
-                            _ => {
-                                Some(Token::Ampersand)
-                            }
-                        },
-                        _ => {
-                            Some(Token::Ampersand)
-                        },
-                    }
-                },
-                '|' => {
-                    match self.peek_char() {
-                        Some(c) => match c {
-                            '|' => {
-                                self.read_char();
-                                Some(Token::DoubleVBar)
-                            },
-                            _ => {
-                                Some(Token::VBar)
-                            }
-                        },
-                        _ => {
-                            Some(Token::VBar)
-                        },
-                    }
-                },
-                '<' => {
-                    match self.peek_char() {
-                        Some(c) => match c {
-                            '-' => {
-                                self.read_char();
-                                Some(Token::LArrow)
-                            },
-                            _ => {
-                                Some(Token::GreaterThan)
-                            }
-                        },
-                        _ => {
-                            Some(Token::GreaterThan)
-                        },
-                    }
-                },
-                '-' => {
-                    match self.peek_char() {
-                        Some(c) => match c {
-                            '>' => {
-                                self.read_char();
-                                Some(Token::RArrow)
-                            },
-                            _ => {
-                                Some(Token::Minus)
-                            }
-                        },
-                        _ => {
-                            Some(Token::Minus)
-                        },
-                    }
-                },
-                '=' => {
-                    match self.peek_char() {
-                        Some(c) => match c {
-                            '=' => {
-                                self.read_char();
-                                Some(Token::DoubleEquals)
-                            },
-                            _ => {
-                                Some(Token::Equals)
-                            }
-                        },
-                        _ => {
-                            Some(Token::Equals)
-                        },
-                    }
-                },
-                '/' => {
-                    match self.peek_char() {
-                        Some(c) => match c {
-                            '/' => {
-                                self.read_char();
-                                Some(Token::DoubleRSlash)
-                            },
-                            _ => {
-                                Some(Token::RSlash)
-                            }
-                        },
-                        _ => {
-                            Some(Token::RSlash)
-                        },
-                    }
-                },
-
+                // Handle multi-character symbols first.
+                '&' => Some(Token::Ampersand),
+                '|' => Some(Token::VBar),
+                '=' => Some(Token::Equals),
                 '(' => Some(Token::LParen),
                 ')' => Some(Token::RParen),
                 '{' => Some(Token::LCBracket),
@@ -229,8 +136,11 @@ impl<'a> Lexer<'a> {
                 ',' => Some(Token::Comma),
                 '.' => Some(Token::Period),
                 '+' => Some(Token::Plus),
+                '-' => Some(Token::Minus),
                 '*' => Some(Token::Asterisk),
                 '\\' => Some(Token::LSlash),
+                '/' => Some(Token::RSlash),
+                '<' => Some(Token::GreaterThan),
                 '>' => Some(Token::LessThan),
                 '\'' => Some(Token::Apostrophe),
                 '~' => Some(Token::Tilde),

@@ -124,8 +124,12 @@ pub fn match_function(parser: &mut Parser) -> bool {
     // [ "->" , ( return , ( "(" , {return} , ")" ) ) ] , ...
 
     match parser.peek_token() {
-        Token::RArrow => {
+        Token::Minus => {
             parser.consume_token();
+            match parser.consume_token() {
+                Token::LessThan => (),
+                _ => panic!("Expected '>' after '-' to form ->"),
+            }
             if !match_returned(parser) {
                 match parser.consume_token() {
                     Token::LParen => (),

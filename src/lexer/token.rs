@@ -89,15 +89,6 @@ pub enum Token {
     Exclamation, // !
     Question, //    ?
     Grave, //       `
-
-    // Multi-character tokens
-    LArrow, //          <-
-    RArrow, //          ->
-    DoubleAmpersand, // &&
-    DoubleVBar,      // ||
-    DoubleEquals, //    ==
-    DoubleRSlash, //    //
-
     Constant(Constant),
     Keyword(Keyword),
     Identifier(String),
@@ -138,14 +129,6 @@ impl fmt::Display for Token {
             Token::Exclamation => write!(fmt, "!"),
             Token::Question => write!(fmt, "?"),
             Token::Grave => write!(fmt, "`"),
-
-            Token::LArrow => write!(fmt, "<-"),
-            Token::RArrow => write!(fmt, "->"),
-            Token::DoubleAmpersand => write!(fmt, "&&"),
-            Token::DoubleVBar => write!(fmt, "||"),
-            Token::DoubleEquals => write!(fmt, "=="),
-            Token::DoubleRSlash => write!(fmt, "//"),
-
             Token::Constant(constant) => write!(fmt, "Constant({})", constant),
             Token::Keyword(keyword) => write!(fmt, "Keyword({})", keyword),
             Token::Identifier(identifier) => write!(fmt, "Identifier({})", identifier),
