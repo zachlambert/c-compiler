@@ -4,17 +4,20 @@ use super::construct::*;
 use super::parser::Parser;
 
 use super::datatype::match_datatype;
-use super::common::match_identifier;
+
 
 fn match_member(parser: &mut Parser) -> bool {
     parser.start_node();
 
     // identifier , ":", type , ":"
     
-    if !match_identifier(parser) {
-        parser.discard_node();
-        return false;
-    }
+    let name = match parser.consume_token() {
+        Token::Identifier(identifier) => identifier,
+        _ => {
+            parser.discard_node();
+            return false;
+        },
+    };
 
     match parser.consume_token() {
         Token::Colon => (),
@@ -37,7 +40,7 @@ fn match_member(parser: &mut Parser) -> bool {
         }
     }
 
-    let construct = Construct::Member;
+    let construct = Construct::Member(String::clone(name));
     parser.confirm_node(&construct);
 
     return true;
@@ -46,12 +49,15 @@ fn match_member(parser: &mut Parser) -> bool {
 pub fn match_structure(parser: &mut Parser) -> bool {
     parser.start_node();
 
-    // identifier , ":" , "=" , "struct" , { member }
+    // identifier , ":" , "struct" , { member }
 
-    if !match_identifier(parser) {
-        parser.discard_node();
-        return false;
-    }
+    let name = match parser.consume_token() {
+        Token::Identifier(identifier) => identifier,
+        _ => {
+            parser.discard_node();
+            return false;
+        },
+    };
 
     match parser.consume_token() {
         Token::Colon => (),
@@ -60,15 +66,6 @@ pub fn match_structure(parser: &mut Parser) -> bool {
             return false;
         },
     }
-
-    match parser.consume_token() {
-        Token::Equals => (),
-        _ => {
-            parser.discard_node();
-            return false;
-        },
-    }
-
 
     match parser.consume_token() {
         Token::Keyword(keyword) => match keyword {
@@ -106,7 +103,7 @@ pub fn match_structure(parser: &mut Parser) -> bool {
         },
     }
 
-    let construct = Construct::Structure;
+    let construct = Construct::Structure(String::clone(name));
     parser.confirm_node(&construct);
 
     return true;

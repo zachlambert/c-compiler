@@ -1,8 +1,9 @@
 
-use crate::lexer::token::*;
+use super::token::*;
 use super::construct::*;
 use super::parser::Parser;
 use super::common::match_identifier;
+
 
 fn match_expression_function(parser: &mut Parser) -> bool {
     parser.start_node();
@@ -47,19 +48,8 @@ fn match_expression_function(parser: &mut Parser) -> bool {
     return true;
 }
 
-// Match an expression that can be evaluated without needing to look at further tokens
-fn match_expression_enclosed(parser: &mut Parser) -> bool {
-    // Only enclosed as you approach from the left
-    if match_expression_unary_op(parser) {
-        return true;
-    }
-
-    if match_expression_function(parser) {
-        return true;
-    }
-
-    // Check for (<expresion>)
-    let expression = match parser.peek_token() {
+pub fn match_expression_parentheses(parser: &mut Parser) -> bool {
+    match parser.peek_token() {
         Token::LParen => {
             parser.consume_token();
             if !match_expression(parser) {
@@ -71,20 +61,58 @@ fn match_expression_enclosed(parser: &mut Parser) -> bool {
             }
             return true;
         }
-        Token::Constant(constant) => Expression::Constant(Constant::clone(constant)),
-        Token::Identifier(identifier) => Expression::Identifier(String::clone(identifier)),
-        _ => {
-            return false;
-        }
-    };
-    parser.consume_token();
+        _ => return false,
+    }
+}
 
-    // Create node for Constant or Identifier
+pub fn match_expression_constant(parser: &mut Parser) -> bool {
     parser.start_node();
-    let construct = Construct::Expression(expression);
-    parser.confirm_node(&construct);
 
+    let constant = match parser.consume_token() {
+        Token::Constant(constant) => constant,
+        _ => {
+            parser.discard_node();
+            return false;
+        },
+    };
+
+    let construct = Construct::Expression(Expression::Constant(Constant::clone(constant)));
+    parser.confirm_node(&construct);
     return true;
+}
+
+pub fn match_expression_identifier(parser: &mut Parser) -> bool {
+    parser.start_node();
+
+    if !match_identifier(parser) {
+        parser.discard_node();
+        return false;
+    }
+
+    let construct = Construct::Expression(Expression::Identifier);
+    parser.confirm_node(&construct);
+    return true;
+}
+
+// Match an expression that can be evaluated without needing to look at further tokens
+fn match_expression_enclosed(parser: &mut Parser) -> bool {
+    if match_expression_unary_op(parser) {
+        // Note: Only enclosed as you approach from the left
+        return true;
+    }
+    if match_expression_function(parser) {
+        return true;
+    }
+    if match_expression_parentheses(parser) {
+        return true;
+    }
+    if match_expression_constant(parser) {
+        return true;
+    }
+    if match_expression_identifier(parser) {
+        return true;
+    }
+    return false;
 }
 
 fn match_binary_op(parser: &mut Parser) -> Option<(BinaryOp, u8)> {
@@ -174,7 +202,7 @@ fn match_expression_unary_op(parser: &mut Parser) -> bool {
     };
 
     if !match_expression_binary_chain(parser, priority) {
-        panic!("Expected expression after unary opeation");
+        panic!("Expected expression after unary operation");
     }
 
     let construct = Construct::Expression(Expression::UnaryOp(unary_op));

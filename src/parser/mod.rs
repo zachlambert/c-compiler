@@ -4,18 +4,11 @@ use crate::lexer::token::*;
 pub mod construct;
 pub mod ast;
 mod parser;
-
-mod program;
-mod structure;
-mod function;
-
-mod statement;
-mod expression;
-mod datatype;
-mod common;
+mod r#match;
 
 use ast::Ast;
 use parser::Parser;
+use r#match::program::match_program;
 
 pub fn build_ast(tokens: &Vec<Token>) -> Option<Ast> {
     let mut ast = Ast::new();
@@ -25,7 +18,7 @@ pub fn build_ast(tokens: &Vec<Token>) -> Option<Ast> {
         128,
         32
     );
-    if !program::match_program(&mut parser) {
+    if !match_program(&mut parser) {
         println!("Failed to match program");
         return None;
     }

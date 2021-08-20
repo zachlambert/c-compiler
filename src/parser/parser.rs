@@ -1,6 +1,5 @@
 
 use crate::lexer::token::Token;
-
 use super::ast::Ast;
 use super::construct::Construct;
 

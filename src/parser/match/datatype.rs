@@ -1,5 +1,5 @@
 
-use crate::lexer::token::*;
+use super::token::*;
 use super::construct::*;
 use super::parser::Parser;
 use super::common::match_identifier;
@@ -83,17 +83,12 @@ pub fn match_datatype(parser: &mut Parser) -> bool {
         }
     }
 
-    println!("Q");
-    println!("{}", parser.peek_token());
-
     let datatype = match parser.peek_token() {
         Token::Ampersand => {
-            println!("A");
             parser.consume_token();
             if !match_datatype(parser) {
                 panic!("Expected data type after &");
             }
-            println!("B");
             Datatype::Pointer
         },
         _ => {

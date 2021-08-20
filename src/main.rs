@@ -4,7 +4,7 @@ use std::io::{BufReader, Read, BufWriter, Write};
 
 mod lexer;
 mod parser;
-mod checker;
+// mod checker;
 // mod compiler;
 // mod datatype;
 
@@ -12,7 +12,7 @@ use lexer::read_tokens;
 use lexer::print_tokens;
 use parser::build_ast;
 use parser::print_ast;
-use checker::resolve_ast;
+// use checker::resolve_ast;
 // use compiler::compile_ast;
 
 fn main() {
@@ -44,7 +44,7 @@ fn main() {
     print_ast(&ast);
 
     // 4. Resolve ast
-    resolve_ast(&mut ast);
+    // resolve_ast(&mut ast);
 
     // 4. Compile ast to string
     let code = String::new();//compile_ast(&ast);

@@ -1,20 +1,23 @@
 
-use crate::lexer::token::*;
+use super::token::*;
 use super::construct::*;
 use super::parser::Parser;
-use super::statement::match_statement;
-use super::common::match_identifier;
 use super::datatype::match_datatype;
+use super::block::match_block;
+
 
 fn match_argument(parser: &mut Parser) -> bool {
     parser.start_node();
 
-    // identifier : datatype
+    // identifier , ":" , datatype
 
-    if !match_identifier(parser) {
-        parser.discard_node();
-        return false;
-    }
+    let name = match parser.consume_token() {
+        Token::Identifier(identifier) => identifier,
+        _ => {
+            parser.discard_node();
+            return false;
+        },
+    };
 
     match parser.consume_token() {
         Token::Colon => (),
@@ -29,7 +32,7 @@ fn match_argument(parser: &mut Parser) -> bool {
         return false;
     }
 
-    let construct = Construct::Argument;
+    let construct = Construct::Argument(String::clone(name));
     parser.confirm_node(&construct);
 
     return true;
@@ -40,12 +43,14 @@ fn match_returned(parser: &mut Parser) -> bool {
 
     // datatype
 
+    let name = String::new(); // TODO: Placeholder if I want named return values
+
     if !match_datatype(parser) {
         parser.discard_node();
         return false;
     }
 
-    let construct = Construct::Returned;
+    let construct = Construct::Returned(String::clone(&name));
     parser.confirm_node(&construct);
 
     return true;
@@ -54,23 +59,18 @@ fn match_returned(parser: &mut Parser) -> bool {
 pub fn match_function(parser: &mut Parser) -> bool {
     parser.start_node();
 
-    // identifier , ":" , "=",  "function" , ...
+    // identifier , ":" , "function" , ...
 
-    if !match_identifier(parser) {
-        parser.discard_node();
-        return false;
-    }
-
-    match parser.consume_token() {
-        Token::Colon => (),
+    let name = match parser.consume_token() {
+        Token::Identifier(identifier) => identifier,
         _ => {
             parser.discard_node();
             return false;
-        },
-    }
+        }
+    };
 
     match parser.consume_token() {
-        Token::Equals => (),
+        Token::Colon => (),
         _ => {
             parser.discard_node();
             return false;
@@ -91,7 +91,7 @@ pub fn match_function(parser: &mut Parser) -> bool {
         },
     }
 
-    // ... , "function" , "(" , [ argument , { "," , argument } ] , ")" ,
+    // ... , "(" , [ argument , { "," , argument } ] , ")" ,
 
     match parser.consume_token() {
         Token::LParen => (),
@@ -157,31 +157,14 @@ pub fn match_function(parser: &mut Parser) -> bool {
         _ => (),
     }
 
-    // "{" , { statement } , "}"
+    // block
 
-    match parser.consume_token() {
-        Token::LCBracket => (),
-        _ => {
-            parser.discard_node();
-            return false;
-        },
+    if !match_block(parser) {
+        parser.discard_node();
+        return false;
     }
 
-    loop {
-        if !match_statement(parser) {
-            break;
-        }
-    }
-
-    match parser.consume_token() {
-        Token::RCBracket => (),
-        _ => {
-            parser.discard_node();
-            return false;
-        },
-    }
-
-    let construct = Construct::Function;
+    let construct = Construct::Function(String::clone(name));
     parser.confirm_node(&construct);
 
     return true;
