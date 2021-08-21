@@ -41,7 +41,7 @@ struct Mapping {
 
 pub struct Checker<'a> {
     pub ast: &'a mut Ast,
-    table: HashMap<String, Option<usize>>, // mapping index
+    table: HashMap<String, usize>, // mapping index
     mappings: Vec<Mapping>,
     scope: Vec<usize>, // stack of the start of valid mappings
     depth: usize,
@@ -59,21 +59,25 @@ impl<'a> Checker<'a> {
     }
 
     pub fn find_symbol(&'a self, name: &String) -> Option<&'a Symbol> {
-        match self.table[name] {
+        match self.table.get(name) {
             Some(index) => {
-                Some(&self.mappings[index].symbol)
+                Some(&self.mappings[*index].symbol)
             },
             _ => None,
         }
     }
 
     pub fn add_symbol(&mut self, name: &String, symbol: Symbol) {
+        let prev = match self.table.get(name) {
+            Some(prev) => Some(*prev),
+            None => None,
+        };
         let mapping = Mapping {
             symbol: Symbol::clone(&symbol),
-            prev: self.table[name],
+            prev: prev,
             name: String::clone(name),
         };
-        self.table.insert(String::clone(name), Some(self.mappings.len()));
+        self.table.insert(String::clone(name), self.mappings.len());
         self.mappings.push(mapping);
     }
 
@@ -88,7 +92,14 @@ impl<'a> Checker<'a> {
         while self.mappings.len() > start {
             let mapping = self.mappings.pop()
                 .expect("Shouldn't be here");
-            self.table.insert(String::clone(&mapping.name), mapping.prev);
+            match mapping.prev {
+                Some(prev) => {
+                    self.table.insert(mapping.name, prev);
+                }
+                None => {
+                    self.table.remove(&mapping.name);
+                }
+            }
         }
         self.depth -= 1;
     }

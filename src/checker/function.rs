@@ -17,6 +17,7 @@ fn check_for_argument(checker: &mut Checker, node_i: usize) -> bool {
         },
         _ => return false,
     }
+    println!("Adding argument {}", name);
     checker.add_symbol(&name, symbol);
     return true;
 }
@@ -34,11 +35,14 @@ fn check_for_returned(checker: &mut Checker, node_i: usize) -> bool {
         },
         _ => return false,
     }
+    println!("Adding return value {}", name);
     checker.add_symbol(&name, symbol);
     return true;
 }
 
 pub fn resolve_function(checker: &mut Checker, node_i: usize) {
+    println!("Resolving function");
+
     checker.increase_scope();
 
     let mut child_opt = checker.ast.nodes[node_i].child;
@@ -48,12 +52,16 @@ pub fn resolve_function(checker: &mut Checker, node_i: usize) {
         match child_opt {
             Some(child_i) => {
                 if !check_for_argument(checker, child_i) {
+                    println!("Encountered construct {}", checker.ast.nodes[child_i].construct);
                     break;
                 }
-                let child = &checker.ast.nodes[node_i];
+                let child = &checker.ast.nodes[child_i];
                 child_opt = child.next;
             },
-            None => break,
+            None => {
+                println!("No more children");
+                break;
+            }
         }
     }
 
@@ -64,7 +72,7 @@ pub fn resolve_function(checker: &mut Checker, node_i: usize) {
                 if !check_for_returned(checker, child_i) {
                     break;
                 }
-                let child = &checker.ast.nodes[node_i];
+                let child = &checker.ast.nodes[child_i];
                 child_opt = child.next;
             },
             None => break,

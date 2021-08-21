@@ -18,6 +18,7 @@ pub fn resolve_identifier(checker: &mut Checker, node_i: usize) -> bool {
         },
         None => panic!("Could not resolve symbol for identifier {}", identifier),
     }
+    println!("Resolved identifier {}", identifier);
     return true;
 }
 
@@ -30,6 +31,8 @@ pub fn resolve_node(checker: &mut Checker, node_i: usize) {
         match child_opt {
             Some(child_i) => {
                 resolve_node(checker, child_i);
+                let child = &checker.ast.nodes[child_i];
+                child_opt = child.next;
             },
             None => break,
         }

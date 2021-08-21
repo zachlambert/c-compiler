@@ -49,5 +49,4 @@ pub fn check_for_symbol(checker: &mut Checker, node_i: usize) {
     }
     println!("Adding symbol with name {}", name);
     checker.add_symbol(&name, symbol);
-    println!("Added symbol with name {}", name);
 }

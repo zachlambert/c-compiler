@@ -35,6 +35,7 @@ pub fn resolve_block(checker: &mut Checker, node_i: usize) {
     loop {
         match child_opt {
             Some(child_i) => {
+                println!("Found child {}", checker.ast.nodes[child_i].construct);
                 match checker.ast.nodes[child_i].construct {
                     Construct::Block => {
                         resolve_block(checker, child_i);
