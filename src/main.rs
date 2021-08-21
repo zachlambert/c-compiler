@@ -40,10 +40,11 @@ fn main() {
     // 3. Build abstract syntax tree
     let mut ast = build_ast(&tokens)
         .expect("Failed to build ast");
-    print_ast(&ast);
+    // print_ast(&ast);
 
     // 4. Resolve ast
     resolve_ast(&mut ast);
+    print_ast(&ast);
 
     // 4. Compile ast to string
     let code = String::new();//compile_ast(&ast);

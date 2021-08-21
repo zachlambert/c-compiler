@@ -47,27 +47,24 @@ pub fn check_for_symbol(checker: &mut Checker, node_i: usize) {
             _ => return,
         }
     }
-    println!("Adding symbol with name {}", name);
     checker.add_symbol(&name, symbol);
 }
 
 fn resolve_datatype_terminal(checker: &mut Checker, node_i: usize) {
-    let node = &checker.ast.nodes[node_i];
-    let identifier: String;
-    {
-        let child = &checker.ast.nodes[node.child
-            .expect("Node passed to resolve_datatype_terminal has no child")];
-        match &child.construct {
-            Construct::Identifier(identifier_) => identifier = String::clone(identifier_),
-            _ => return,
-        };
-    }
-    let symbol_node_i = match checker.find_symbol(&identifier) {
-        Some(symbol) => symbol.node_i,
-        _ => panic!("Couldn't find symbol for identifier {}", identifier),
+    let child_i = match checker.ast.nodes[node_i].child {
+        Some(child_i) => child_i,
+        None => return,
     };
-    let node = &mut checker.ast.nodes[node_i];
-    node.child = Some(symbol_node_i);
+    let identifier = match &checker.ast.nodes[child_i].construct {
+        Construct::Identifier(identifier) => identifier,
+        _ => return,
+    };
+    let ref_node_i = match checker.find_symbol(identifier) {
+        Some(symbol) => symbol.node_i,
+        None => panic!("Couldn't find symbol for identifier {}", identifier),
+    };
+    let child = &mut checker.ast.nodes[child_i];
+    child.construct = Construct::Reference(ref_node_i);
 }
 
 fn resolve_datatype(checker: &mut Checker, node_i: usize) {

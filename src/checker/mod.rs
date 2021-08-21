@@ -1,10 +1,8 @@
 
-
 mod checker;
-mod function;
-mod symbol;
-mod node;
 mod content;
+mod symbol;
+mod function;
 
 use crate::parser::ast::Ast;
 use checker::Checker;

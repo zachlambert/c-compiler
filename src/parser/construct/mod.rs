@@ -67,6 +67,9 @@ pub enum Construct {
 
     Identifier(String),
     // Terminal
+
+    Reference(usize),
+    // Terminal
 }
 
 impl fmt::Display for Construct {
@@ -88,6 +91,7 @@ impl fmt::Display for Construct {
             Construct::Expression(expression) => write!(fmt, "{}", expression),
             Construct::Primitive(primitive) => write!(fmt, "{}", primitive),
             Construct::Identifier(identifier) => write!(fmt, "Identifier({})", identifier),
+            Construct::Reference(node_i) => write!(fmt, "Reference({})", node_i),
         }
     }
 }
