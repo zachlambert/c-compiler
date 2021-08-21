@@ -97,7 +97,6 @@ pub fn match_expression_identifier(parser: &mut Parser) -> bool {
 // Match an expression that can be evaluated without needing to look at further tokens
 fn match_expression_enclosed(parser: &mut Parser) -> bool {
     if match_expression_unary_op(parser) {
-        // Note: Only enclosed as you approach from the left
         return true;
     }
     if match_expression_function(parser) {
@@ -155,85 +154,64 @@ fn match_binary_op(parser: &mut Parser) -> Option<(BinaryOp, u8)> {
     Some((op, priority))
 }
 
-fn match_expression_binary_chain(parser: &mut Parser, priority: u8) -> bool {
-    if !match_expression_enclosed(parser) {
-        return false;
-    }
-
-    parser.stash_state();
-    let (op, op_priority) = match match_binary_op(parser) {
-        Some((op, op_priority)) => (op, op_priority),
-        None => {
-            parser.rollback_state();
-            return true;
-        }
-    };
-
-    if op_priority > priority {
-        parser.rollback_state();
-        return true;
-    }
-
-    parser.start_node_with_prev(1);
-
-    // Higher priority. Create binary expression, then return.
-    if !match_expression_binary_chain(parser, op_priority) {
-        panic!("Missing expression after binary operation");
-    }
-
-    let construct = Construct::Expression(Expression::BinaryOp(op));
-    parser.confirm_node(&construct);
-
-    return true;
-}
-
 fn match_expression_unary_op(parser: &mut Parser) -> bool {
-    parser.start_node();
-
+    parser.stash_state();
     let (unary_op, priority) = match parser.consume_token() {
         Token::Minus => (UnaryOp::Negate, 52),
         Token::Exclamation => (UnaryOp::LogicalNot, 41),
         Token::Ampersand => (UnaryOp::Ref, 11),
         Token::Asterisk => (UnaryOp::Deref, 11),
         _ => {
-            parser.discard_node();
+            parser.rollback_state();
             return false;
         }
     };
 
-    if !match_expression_binary_chain(parser, priority) {
-        panic!("Expected expression after unary operation");
+    if !match_expression_enclosed(parser) {
+        panic!("Missing expression after unary operator");
     }
 
+    match_binary_expression(parser, priority);
+
+    parser.start_node_with_prev(1);
     let construct = Construct::Expression(Expression::UnaryOp(unary_op));
     parser.confirm_node(&construct);
 
     return true;
 }
 
+pub fn match_binary_expression(parser: &mut Parser, priority: u8) {
+    parser.stash_state();
+    let (op, op_priority) = match match_binary_op(parser) {
+        Some((op, priority)) => (op, priority),
+        None => {
+            parser.rollback_state();
+            return;
+        }
+    };
+
+    if op_priority >= priority {
+        parser.rollback_state();
+        return;
+    }
+
+    parser.start_node_with_prev(1);
+    // Add node for right
+    if !match_expression_enclosed(parser) {
+        panic!("Missing expression after binary operator");
+    }
+    match_binary_expression(parser, op_priority);
+
+    let construct = Construct::Expression(Expression::BinaryOp(op));
+    parser.confirm_node(&construct);
+
+    match_binary_expression(parser, priority);
+}
+
 pub fn match_expression(parser: &mut Parser) -> bool {
     if !match_expression_enclosed(parser) {
         return false;
     }
-
-    // Find binary operations
-    loop {
-        parser.stash_state();
-        let (op, priority) = match match_binary_op(parser) {
-            Some((op, priority)) => (op, priority),
-            None => {
-                parser.rollback_state();
-                break;
-            }
-        };
-        parser.start_node_with_prev(1);
-        if !match_expression_binary_chain(parser, priority) {
-            panic!("Missing expression after binary operator");
-        }
-
-        let construct = Construct::Expression(Expression::BinaryOp(op));
-        parser.confirm_node(&construct);
-    }
-
+    match_binary_expression(parser, 255);
     return true;
 }

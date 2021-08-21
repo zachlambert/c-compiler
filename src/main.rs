@@ -43,7 +43,7 @@ fn main() {
     print_ast(&ast);
 
     // 4. Resolve ast
-    resolve_ast(&mut ast);
+    // resolve_ast(&mut ast);
 
     // 4. Compile ast to string
     let code = String::new();//compile_ast(&ast);
