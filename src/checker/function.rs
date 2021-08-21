@@ -1,7 +1,7 @@
 
 use super::checker::*;
 use crate::parser::construct::*;
-use super::block::resolve_block;
+use super::content::check_content;
 
 
 fn check_for_argument(checker: &mut Checker, node_i: usize) -> bool {
@@ -40,9 +40,7 @@ fn check_for_returned(checker: &mut Checker, node_i: usize) -> bool {
     return true;
 }
 
-pub fn resolve_function(checker: &mut Checker, node_i: usize) {
-    println!("Resolving function");
-
+pub fn check_function(checker: &mut Checker, node_i: usize) {
     checker.increase_scope();
 
     let mut child_opt = checker.ast.nodes[node_i].child;
@@ -79,13 +77,13 @@ pub fn resolve_function(checker: &mut Checker, node_i: usize) {
         }
     }
 
-    // 3. Handle block
+    // 3. Check function content
     let block_i = child_opt.expect("Expect block node at end of function");
     match checker.ast.nodes[block_i].construct {
         Construct::Block => (),
         _ => panic!("Expected block node at end of function"),
     }
-    resolve_block(checker, block_i);
+    check_content(checker, block_i);
 
     checker.decrease_scope();
 }
