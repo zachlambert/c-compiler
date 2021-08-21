@@ -17,13 +17,14 @@ use std::collections::HashMap;
 pub enum Storage {
     Local(i64),   // Stack offset
     Global(String), // Label
+    Undefined,    // Determine at later stage
 }
 
 #[derive(Clone)]
 pub enum SymbolData {
     Variable(Storage),
     Function(String),  // Label
-    Struct,
+    Structure,
 }
 
 #[derive(Clone)]
