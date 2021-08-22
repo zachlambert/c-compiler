@@ -16,7 +16,7 @@ pub fn build_ast(tokens: &Vec<Token>) -> Option<Ast> {
         &mut ast,
         tokens,
         128,
-        32
+        32,
     );
     if !match_program(&mut parser) {
         println!("Failed to match program");

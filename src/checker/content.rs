@@ -4,6 +4,7 @@ use crate::parser::construct::*;
 use super::symbol::check_for_symbol;
 use super::symbol::resolve_symbol;
 use super::function::check_function;
+use super::statement::check_statement;
 
 fn check_block(checker: &mut Checker, node_i: usize) {
     checker.increase_scope();
@@ -32,7 +33,7 @@ pub fn check_content(checker: &mut Checker, node_i: usize) {
         }
     }
 
-    // 2. Resolve symbols (resolve their datatypes)
+    // 2. Resolve datatypes within structs and functions
     let mut child_opt = checker.ast.nodes[node_i].child;
     loop {
         match child_opt {
@@ -51,7 +52,6 @@ pub fn check_content(checker: &mut Checker, node_i: usize) {
     loop {
         match child_opt {
             Some(child_i) => {
-                println!("Found child {}", checker.ast.nodes[child_i].construct);
                 match checker.ast.nodes[child_i].construct {
                     Construct::Block => {
                         check_block(checker, child_i);
@@ -60,7 +60,7 @@ pub fn check_content(checker: &mut Checker, node_i: usize) {
                         check_function(checker, child_i);
                     },
                     Construct::Statement(_) => {
-                        // resolve_statement(checker, child_i); TODO
+                        check_statement(checker, child_i);
                     },
                     _ => (),
                 }

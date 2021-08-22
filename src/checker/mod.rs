@@ -3,6 +3,8 @@ mod checker;
 mod content;
 mod symbol;
 mod function;
+mod statement;
+mod expression;
 
 use crate::parser::ast::Ast;
 use checker::Checker;
