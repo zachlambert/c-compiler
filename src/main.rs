@@ -8,11 +8,11 @@ mod generator;
 // mod compiler;
 
 use lexer::read_tokens;
-use lexer::print_tokens;
+// use lexer::print_tokens;
 use parser::build_ast;
 use parser::print_ast;
 use generator::generate_instructions;
-// use compiler::compile_ast;
+// use compiler::compile_instructions;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -43,11 +43,16 @@ fn main() {
     // print_ast(&ast);
 
     // 4. Resolve ast
-    resolve_ast(&mut ast);
+    let config = generator::Config {
+        num_temporary: 8,
+        num_saved: 8,
+        num_floats: 4,
+    };
+    let instructions = generate_instructions(&mut ast, config);
     print_ast(&ast);
 
     // 4. Compile ast to string
-    let code = String::new();//compile_ast(&ast);
+    let code = String::new(); //compile_instructions(&instructions);
 
     // 5. Write code to file
     let output_file = fs::File::create(output_name)

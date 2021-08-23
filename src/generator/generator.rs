@@ -2,6 +2,7 @@
 use crate::parser::ast::Ast;
 use crate::parser::construct::Construct;
 use std::collections::HashMap;
+use super::instructions::Element;
 
 // Mappings: [ main, func1, global_var, argc, argv, x, ... ]
 //           <--  scope 0 ----------> < --- scope 1 --> etc
@@ -41,14 +42,15 @@ struct Mapping {
 
 #[derive(Clone, Copy)]
 pub struct Config {
-    num_temporary: usize,
-    num_saved: usize,
-    num_floats: usize,
+    pub num_temporary: usize,
+    pub num_saved: usize,
+    pub num_floats: usize,
 }
 
 pub struct Generator<'a> {
     pub ast: &'a mut Ast,
     config: Config,
+    instructions: &'a mut Vec<Element>,
     table: HashMap<String, usize>, // mapping index
     mappings: Vec<Mapping>,
     scope: Vec<usize>, // stack of the start of valid mappings
@@ -57,16 +59,19 @@ pub struct Generator<'a> {
 }
 
 impl<'a> Generator<'a> {
-    pub fn new(ast: &'a mut Ast, config: Config) -> Generator<'a> {
-        let generator = Generator {
+    pub fn new(ast: &'a mut Ast, config: Config, instructions: &'a mut Vec<Element>) -> Generator<'a> {
+        let start_i = ast.nodes.len() - 1;
+        let mut generator = Generator {
             ast: ast,
             config: config,
+            instructions: instructions,
             table: HashMap::new(),
             mappings: Vec::new(),
             scope: Vec::new(),
             tree_stack: Vec::new(),
+            stack_size: 0,
         };
-        generator.tree_stack.push(ast.nodes.len() - 1);
+        generator.tree_stack.push(start_i);
         return generator;
     }
 
