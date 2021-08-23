@@ -4,14 +4,14 @@ use std::io::{BufReader, Read, BufWriter, Write};
 
 mod lexer;
 mod parser;
-mod checker;
+mod generator;
 // mod compiler;
 
 use lexer::read_tokens;
 use lexer::print_tokens;
 use parser::build_ast;
 use parser::print_ast;
-use checker::resolve_ast;
+use generator::generate_instructions;
 // use compiler::compile_ast;
 
 fn main() {
