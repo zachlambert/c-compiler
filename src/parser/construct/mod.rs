@@ -22,7 +22,7 @@ pub enum Construct {
     Function(String), // name
     // { argument } , { returned } , block
 
-    Structure(String), // name
+    Structure(String, usize), // name, size
     // { member }
 
     Variable(String), // name
@@ -39,8 +39,8 @@ pub enum Construct {
     // datatype
     // Variable created in function return list. May be referred to implicitly.
 
-    Member(String), // name
-    // datatype
+    Member(String, usize), // name, offset
+    // bytes , datatype
     // Variable created with a declare statement, within a struct
 
     // === Block and statements ===
@@ -77,12 +77,12 @@ impl fmt::Display for Construct {
         match self {
             Construct::Program => write!(fmt, "Program"),
             Construct::Function(name) => write!(fmt, "Function({})", name),
-            Construct::Structure(name) => write!(fmt, "Structure({})", name),
+            Construct::Structure(name, size) => write!(fmt, "Structure({}, size={})", name, size),
             Construct::Variable(name) => write!(fmt, "Variable({})", name),
 
             Construct::Argument(name) => write!(fmt, "Argument({})", name),
             Construct::Returned(name) => write!(fmt, "Returned({})", name),
-            Construct::Member(name) => write!(fmt, "Member({})", name),
+            Construct::Member(name, offset) => write!(fmt, "Member({}, offset={})", name, offset),
 
             Construct::Block => write!(fmt, "Block"),
             Construct::Statement(statement) => write!(fmt, "{}", statement),

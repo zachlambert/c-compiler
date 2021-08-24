@@ -12,6 +12,7 @@ use lexer::read_tokens;
 use parser::build_ast;
 use parser::print_ast;
 use generator::generate_instructions;
+use generator::print_instructions;
 // use compiler::compile_instructions;
 
 fn main() {
@@ -43,13 +44,9 @@ fn main() {
     // print_ast(&ast);
 
     // 4. Resolve ast
-    let config = generator::Config {
-        num_temporary: 8,
-        num_saved: 8,
-        num_floats: 4,
-    };
-    let instructions = generate_instructions(&mut ast, config);
+    let instructions = generate_instructions(&mut ast);
     print_ast(&ast);
+    print_instructions(&instructions);
 
     // 4. Compile ast to string
     let code = String::new(); //compile_instructions(&instructions);

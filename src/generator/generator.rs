@@ -14,62 +14,31 @@ use super::instructions::Element;
 // Symbol table is a HashMap of:
 //   name -> index of mapping
 
-
-#[derive(Clone)]
-pub enum Storage {
-    Local(i64),   // Stack offset
-    Global(String), // Label
-}
-
-#[derive(Clone)]
-pub enum SymbolData {
-    Variable(Storage),
-    Function(String),  // Label
-    Structure,
-}
-
-#[derive(Clone)]
-pub struct Symbol {
-    pub node_i: usize,
-    pub data: SymbolData,
-}
-
 struct Mapping {
-    pub symbol: Symbol,
+    pub node_i: usize,
     pub prev: Option<usize>,
     pub name: String,
 }
 
-#[derive(Clone, Copy)]
-pub struct Config {
-    pub num_temporary: usize,
-    pub num_saved: usize,
-    pub num_floats: usize,
-}
-
 pub struct Generator<'a> {
     pub ast: &'a mut Ast,
-    config: Config,
     instructions: &'a mut Vec<Element>,
     table: HashMap<String, usize>, // mapping index
     mappings: Vec<Mapping>,
     scope: Vec<usize>, // stack of the start of valid mappings
     tree_stack: Vec<usize>,
-    stack_size: usize, // Size of stack frame in a function
 }
 
 impl<'a> Generator<'a> {
-    pub fn new(ast: &'a mut Ast, config: Config, instructions: &'a mut Vec<Element>) -> Generator<'a> {
+    pub fn new(ast: &'a mut Ast, instructions: &'a mut Vec<Element>) -> Generator<'a> {
         let start_i = ast.nodes.len() - 1;
         let mut generator = Generator {
             ast: ast,
-            config: config,
             instructions: instructions,
             table: HashMap::new(),
             mappings: Vec::new(),
             scope: Vec::new(),
             tree_stack: Vec::new(),
-            stack_size: 0,
         };
         generator.tree_stack.push(start_i);
         return generator;
@@ -117,22 +86,29 @@ impl<'a> Generator<'a> {
         }
     }
 
-    pub fn find_symbol(&'a self, name: &String) -> Option<&'a Symbol> {
+    pub fn restart(&mut self) {
+        self.up();
+        self.down();
+    }
+
+    pub fn find_symbol(&self, name: &String) -> Option<usize> {
         match self.table.get(name) {
             Some(index) => {
-                Some(&self.mappings[*index].symbol)
+                return Some(self.mappings[*index].node_i);
             },
-            _ => None,
+            _ => return None,
         }
     }
 
-    pub fn add_symbol(&mut self, name: &String, symbol: Symbol) {
+    pub fn add_symbol(&mut self, name: &String) {
+        let node_i = *self.tree_stack.last()
+            .expect("Tried to call add_symbol() on an empty tree_stack");
         let prev = match self.table.get(name) {
             Some(prev) => Some(*prev),
             None => None,
         };
         let mapping = Mapping {
-            symbol: Symbol::clone(&symbol),
+            node_i: node_i,
             prev: prev,
             name: String::clone(name),
         };
@@ -161,13 +137,9 @@ impl<'a> Generator<'a> {
         }
     }
 
-    pub fn new_stack_frame(&mut self) {
-        self.stack_size = 0;
-    }
-
-    pub fn allocate_stack_space(&mut self, size: usize) -> usize {
-        let result = self.stack_size;
-        self.stack_size += size;
-        return result;
+    pub fn replace_construct(&mut self, construct: &Construct) {
+        let node_i = *self.tree_stack.last()
+            .expect("Tried to call replace_construct() on an empty tree_stack");
+        self.ast.nodes[node_i].construct = Construct::clone(construct);
     }
 }

@@ -40,7 +40,8 @@ fn match_member(parser: &mut Parser) -> bool {
         }
     }
 
-    let construct = Construct::Member(String::clone(name));
+    // Offset is calculated later
+    let construct = Construct::Member(String::clone(name), 0);
     parser.confirm_node(&construct);
 
     return true;
@@ -103,7 +104,8 @@ pub fn match_structure(parser: &mut Parser) -> bool {
         },
     }
 
-    let construct = Construct::Structure(String::clone(name));
+    // Size is calculated later
+    let construct = Construct::Structure(String::clone(name), 0);
     parser.confirm_node(&construct);
 
     return true;

@@ -1,8 +1,9 @@
 
-use super::checker::*;
+use super::generator::Generator;
 use crate::parser::construct::*;
 
 
+/*
 fn get_function_label(checker: &Checker, name: &String) -> String {
 
     let mut label = String::new();
@@ -14,127 +15,104 @@ fn get_function_label(checker: &Checker, name: &String) -> String {
 
     return label;
 }
+*/
 
 // Standard symbols that can be declared in a scope.
 // Excludes arguments and return values
-pub fn check_for_symbol(checker: &mut Checker, node_i: usize) {
-    let name : String;
-    let symbol : Symbol;
-    {
-        let node = &checker.ast.nodes[node_i];
-        match &node.construct {
-            Construct::Function(name_) => {
-                symbol = Symbol {
-                    node_i: node_i,
-                    data: SymbolData::Function(get_function_label(checker, name_)),
-                };
-                name = String::clone(name_);
-            },
-            Construct::Structure(name_) => {
-                symbol = Symbol {
-                    node_i: node_i,
-                    data: SymbolData::Structure,
-                };
-                name = String::clone(name_);
-            },
-            Construct::Variable(name_) => {
-                symbol = Symbol {
-                    node_i: node_i,
-                    data: SymbolData::Structure,
-                };
-                name = String::clone(name_);
-            },
-            _ => return,
-        }
-    }
-    checker.add_symbol(&name, symbol);
-}
-
-fn resolve_datatype_terminal(checker: &mut Checker, node_i: usize) {
-    let child_i = match checker.ast.nodes[node_i].child {
-        Some(child_i) => child_i,
-        None => return,
-    };
-    let identifier = match &checker.ast.nodes[child_i].construct {
-        Construct::Identifier(identifier) => identifier,
+pub fn check_for_symbol(generator: &mut Generator) {
+    let name: String;
+    match generator.current() {
+        Construct::Function(name_) => name = String::clone(name_),
+        Construct::Structure(name_, _) => name = String::clone(name_),
+        Construct::Variable(name_) => name = String::clone(name_),
         _ => return,
     };
-    let ref_node_i = match checker.find_symbol(identifier) {
-        Some(symbol) => symbol.node_i,
+    generator.add_symbol(&name);
+}
+
+fn resolve_datatype_terminal(generator: &mut Generator) {
+    // Current node is Datatype::Terminal
+    // Child is identifier, terminal (or reference when resolved)
+    // If it is an identifier, change construct to a reference
+    
+    generator.down();
+    let identifier = match generator.current() {
+        Construct::Identifier(identifier) => identifier,
+        _ => {
+            generator.up();
+            return;
+        },
+    };
+
+    let ref_node_i = match generator.find_symbol(identifier) {
+        Some(node_i) => node_i,
         None => panic!("Couldn't find symbol for identifier {}", identifier),
     };
-    let child = &mut checker.ast.nodes[child_i];
-    child.construct = Construct::Reference(ref_node_i);
+    let construct = Construct::Reference(ref_node_i);
+
+    generator.replace_construct(&construct);
+    generator.up();
 }
 
-fn resolve_datatype(checker: &mut Checker, node_i: usize) {
-    // node_i is some node, where first child should be a datatype
-    // In the case of pointers, need to recursively scan down until reaching
-    // an identifier.
-    let mut child_opt = checker.ast.nodes[node_i].child;
+fn resolve_datatype(generator: &mut Generator) {
+    // Current node has datatype as one of its children
+    // If a datatype is terminal, it will have a primitive or identifier as child
+    // If a datatype is a pointer, one of its children will also be a datatype
+    generator.down();
     loop {
-        match child_opt {
-            Some(child_i) => {
-                resolve_datatype(checker, child_i);
-                match &checker.ast.nodes[child_i].construct {
-                    Construct::Datatype(datatype) => match datatype {
-                        Datatype::Terminal => {
-                            resolve_datatype_terminal(checker, child_i);
-                        }
-                        _ => (),
-                    }
-                    _ => (),
+        if let Construct::Datatype(datatype) = generator.current() {
+            match datatype {
+                Datatype::Terminal => {
+                    resolve_datatype_terminal(generator);
+                },
+                Datatype::Pointer => {
+                    resolve_datatype(generator);
                 }
-                let child = &checker.ast.nodes[child_i];
-                child_opt = child.next;
-            },
-            None => break,
+            }
+        }
+        if !generator.next() {
+            break;
         }
     }
+    generator.up();
 }
 
-fn resolve_function(checker: &mut Checker, node_i: usize) {
-    let mut child_opt = checker.ast.nodes[node_i].child;
+fn resolve_function(generator: &mut Generator) {
+    generator.down();
     loop {
-        match child_opt {
-            Some(child_i) => {
-                match checker.ast.nodes[child_i].construct {
-                    Construct::Argument(_) => (),
-                    Construct::Returned(_) => (),
-                    _ => break,
-                }
-                resolve_datatype(checker, child_i);
-                let child = &checker.ast.nodes[child_i];
-                child_opt = child.next;
-            },
-            None => break,
+        match generator.current() {
+            Construct::Argument(_) => (),
+            Construct::Returned(_) => (),
+            _ => break,
+        }
+        resolve_datatype(generator);
+        if !generator.next() {
+            break;
         }
     }
+    generator.up();
 }
 
-fn resolve_structure(checker: &mut Checker, node_i: usize) {
-    let mut child_opt = checker.ast.nodes[node_i].child;
+fn resolve_structure(generator: &mut Generator) {
+    generator.down();
     loop {
-        match child_opt {
-            Some(child_i) => {
-                match checker.ast.nodes[child_i].construct {
-                    Construct::Member(_) => (),
-                    _ => break,
-                }
-                resolve_datatype(checker, child_i);
-                let child = &checker.ast.nodes[child_i];
-                child_opt = child.next;
-            },
-            None => break,
+        match generator.current() {
+            Construct::Member(_, _) => (),
+            _ => break,
+        }
+        resolve_datatype(generator);
+        if !generator.next() {
+            break;
         }
     }
+    generator.up();
 }
 
-pub fn resolve_symbol(checker: &mut Checker, node_i: usize) {
-    match &checker.ast.nodes[node_i].construct {
-        Construct::Function(_) => resolve_function(checker, node_i),
-        Construct::Structure(_) => resolve_structure(checker, node_i),
-        Construct::Variable(_) => resolve_datatype(checker, node_i),
+pub fn resolve_symbol(generator: &mut Generator) {
+    match generator.current() {
+        Construct::Function(_) => resolve_function(generator),
+        Construct::Structure(_, _) => resolve_structure(generator),
+        Construct::Variable(_) => resolve_datatype(generator),
         _ => return,
     }
 }
