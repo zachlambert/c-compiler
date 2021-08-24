@@ -44,11 +44,12 @@ impl<'a> Generator<'a> {
         return generator;
     }
 
-    pub fn current_mut(&'a mut self) -> &'a mut Construct {
-        let node_i = *self.tree_stack.last()
-            .expect("Tried to call current_mut() on an empty tree_stack");
-        return &mut self.ast.nodes[node_i].construct;
-    }
+    // Haven't worked out how to use this without borrow checker complaining
+    // pub fn current_mut(&'a mut self) -> &'a mut Construct {
+    //     let node_i = *self.tree_stack.last()
+    //         .expect("Tried to call current_mut() on an empty tree_stack");
+    //     return &mut self.ast.nodes[node_i].construct;
+    // }
 
     pub fn current(&'a self) -> &'a Construct {
         let node_i = *self.tree_stack.last()
@@ -65,6 +66,16 @@ impl<'a> Generator<'a> {
                 return true;
             },
             None => return false,
+        }
+    }
+
+    pub fn down_ref(&mut self) {
+        let node_i = *self.tree_stack.last()
+            .expect("Tried to call down() on an empty tree_stack");
+        if let Construct::Reference(ref_id) = self.ast.nodes[node_i].construct {
+            self.tree_stack.push(ref_id);
+        } else {
+            panic!("Called down_ref, but node isn't a reference");
         }
     }
 
