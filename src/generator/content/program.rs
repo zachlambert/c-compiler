@@ -1,6 +1,6 @@
 
+use super::construct::*;
 use super::generator::Generator;
-use crate::parser::construct::*;
 
 use super::content::resolve_content;
 use super::content::generate_content;

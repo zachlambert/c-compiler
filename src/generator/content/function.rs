@@ -1,7 +1,7 @@
 
+use super::construct::*;
 use super::generator::Generator;
 use super::instructions::*;
-use super::construct::*;
 
 use super::content::resolve_content;
 use super::content::generate_content;
@@ -14,6 +14,7 @@ pub fn generate_function(generator: &mut Generator) {
     };
     generator.increase_scope_function();
 
+    // Add function label
     generator.add_element(Element::Instruction(Instruction::Label));
     if name != "main" {
         name.push_str("__");

@@ -1,6 +1,8 @@
 
 use std::fmt;
 
+// ===== Instructions =====
+
 #[derive(Clone)]
 pub enum ALUOp {
     Add,
@@ -8,89 +10,6 @@ pub enum ALUOp {
     // TODO
 }
 
-#[derive(Clone)]
-pub enum Condition {
-    Equal,
-    LessThan,
-    // TODO
-}
-
-#[derive(Clone)]
-pub enum Instruction {
-    Store, // Register -> Memory
-    Load,  // Memory -> Register
-    Move,  // Register -> Register
-    ALUOp(ALUOp),  // Result(args) -> Register
-    Jump,  // Unconditional jump to a label
-    Branch(Condition), // Jump to label if Condition(RegA, RegB)
-    Call,  // Call procedure
-    Return, // Return from procedure
-    Label, // Put a label here
-}
-
-#[derive(Clone)]
-pub enum RegisterType {
-    Int,
-    Float,
-    StackPointer,
-}
-
-#[derive(Clone)]
-pub struct Register {
-    index: u8,       // Index of register
-    volatile: bool,  // Volatile or non-volatile register
-    reg_type: RegisterType,
-}
-
-#[derive(Clone)]
-pub enum Memory {
-    Label,          // Memory[label]
-    Offset,         // Memory[reg + offset]
-    OffsetVariable, // Memory[reg + i(reg2)]
-    OffsetStride,   // Memory[reg + stride*i(reg2) + j(reg3)]
-}
-
-#[derive(Clone)]
-pub enum Constant {
-    Int(i64),
-    Float(f64),
-    Str(String),
-}
-
-#[derive(Clone)]
-pub enum Argument {
-    Label(String),       // Assembly label
-    Register(Register),
-    Memory(Memory),
-    Constant(Constant),
-    Integer(i64),        // Offset or stride
-}
-
-#[derive(Clone)]
-pub enum Pseudo { // Pseudoinstructions
-    // Code required to save/restore temporary and saved registers.
-    CallerBefore, // Code required by caller before a procedure call
-    CallerAfter,  // Code requierd by caller after a produre call
-    CalleeBefore, // Code required by a callee before procedure content
-    CalleeAfter,  // Code required by a callee after procedure content
-}
-
-#[derive(Clone)]
-pub enum Element {
-    Instruction(Instruction),
-    Argument(Argument),
-    Pseudo(Pseudo),
-    Blank,
-}
-
-impl Default for Element {
-    fn default() -> Self { Element::Blank }
-}
-
-// Store an array of elements to encode instructions.
-// eg:
-// Store RegA -> Mem[SP + RegB]
-// == [Instruction(Store), Arg(RegA), Arg(Memory(OfsetVariable)), Arg(SP), Arg(RegB)]
 
 impl fmt::Display for ALUOp {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
@@ -99,6 +18,13 @@ impl fmt::Display for ALUOp {
             ALUOp::Sub => write!(fmt, "ALUOp(Sub)"),
         }
     }
+}
+
+#[derive(Clone)]
+pub enum Condition {
+    Equal,
+    LessThan,
+    // TODO
 }
 
 impl fmt::Display for Condition {
@@ -110,12 +36,25 @@ impl fmt::Display for Condition {
     }
 }
 
+#[derive(Clone)]
+pub enum Instruction {
+    Move,  // Assignment. Decide between register / memory later.
+    GetArgument, // Move argument(location) -> symbol
+    SetReturned, // Move symbol -> returned(location)
+    ALUOp(ALUOp),  // Result(args) -> Register
+    Jump,  // Unconditional jump to a label
+    Branch(Condition), // Jump to label if Condition(RegA, RegB)
+    Call,  // Call procedure
+    Return, // Return from procedure
+    Label, // Put a label here
+}
+
 impl fmt::Display for Instruction {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Instruction::Store => write!(fmt, "Instruction(Store)"),
-            Instruction::Load => write!(fmt, "Instruction(Load)"),
             Instruction::Move => write!(fmt, "Instruction(Move)"),
+            Instruction::GetArgument => write!(fmt, "Instruction(GetArgument)"),
+            Instruction::SetReturned => write!(fmt, "Instruction(SetReturned)"),
             Instruction::ALUOp(alu_op) => write!(fmt, "Instruction({})", alu_op),
             Instruction::Jump => write!(fmt, "Instruction(Jump)"),
             Instruction::Branch(condition) => write!(fmt, "Instruction({})", condition),
@@ -126,65 +65,108 @@ impl fmt::Display for Instruction {
     }
 }
 
-impl fmt::Display for RegisterType {
+
+// ===== Arguments to instructions relating to memory =====
+
+#[derive(Clone)]
+pub enum Datatype {
+    Integer,
+    Float,
+    Pointer,
+}
+
+impl fmt::Display for Datatype {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RegisterType::Int => write!(fmt, "RegType(Int)"),
-            RegisterType::Float => write!(fmt, "RegType(Float)"),
-            RegisterType::StackPointer => write!(fmt, "RegType(StackPointer)"),
+            Datatype::Integer => write!(fmt, "Datatype(Integer)"),
+            Datatype::Float => write!(fmt, "Datatype(Float)"),
+            Datatype::Pointer => write!(fmt, "Datatype(Pointer)"),
         }
     }
 }
 
-impl fmt::Display for Register {
+// Used to specify location for passing arguments to procedures and returning
+// return values from procedures.
+// Registers and stacks are allocated based on size and datatype. Index is used
+// to allocate in a consistent order.
+#[derive(Clone)]
+pub struct PassLocation {
+    index: usize,
+    size: usize,
+    datatype: Datatype,
+}
+
+impl fmt::Display for PassLocation {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt,
-               "Register(index: {}, volatile: {}, type: {})",
-               self.index, self.volatile, self.reg_type)
+               "PassLocation(index: {}, size: {}, datatype: {}",
+               self.index, self.size, self.datatype)
     }
 }
 
-impl fmt::Display for Memory {
+// Generic reference to a local variable.
+// Stores variable name and a version number (for SSA).
+// Also stores size and datatype to inform instructions that operate on them.
+#[derive(Clone)]
+pub struct Symbol {
+    name: String,
+    version: usize,
+    size: usize,
+    datatype: Datatype,
+}
+
+impl fmt::Display for Symbol {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Memory::Label => write!(fmt, "Memory(Label)"),
-            Memory::Offset => write!(fmt, "Memory(Offset)"),
-            Memory::OffsetVariable => write!(fmt, "Memory(OffsetVariable)"),
-            Memory::OffsetStride => write!(fmt, "Memory(OffsetStride)"),
-        }
+        write!(fmt,
+               "Symbol(name: {}, version: {}, size: {}, datatype: {}",
+               self.name, self.version, self.size, self.datatype)
     }
 }
+
+// Immediate value.
+#[derive(Clone)]
+pub enum Constant {
+    Int(i64),
+    Float(f64),
+}
+
 impl fmt::Display for Constant {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Constant::Int(constant) => write!(fmt, "Contant(Int({}))", constant),
             Constant::Float(constant) => write!(fmt, "Contant(Float({}))", constant),
-            Constant::Str(constant) => write!(fmt, "Contant(Str({}))", constant),
         }
     }
+}
+
+#[derive(Clone)]
+pub enum Argument {
+    Label(String),       // Assembly label
+    Symbol(Symbol),      // Generic symbol
+    Constant(Constant),
+    Integer(i64),        // Offset or stride
 }
 
 impl fmt::Display for Argument {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Argument::Label(label) => write!(fmt, "Argument(Label({}))", label),
-            Argument::Register(register) => write!(fmt, "Argument({})", register),
-            Argument::Memory(memory) => write!(fmt, "Argument({})", memory),
+            Argument::Symbol(symbol) => write!(fmt, "Argument({})", symbol),
             Argument::Constant(constant) => write!(fmt, "Argument({})", constant),
             Argument::Integer(integer) => write!(fmt, "Argument(Integer({}))", integer),
         }
     }
 }
 
-impl fmt::Display for Pseudo {
-    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Pseudo::CalleeBefore => write!(fmt, "Pseudo(CalleeBefore)"),
-            Pseudo::CalleeAfter => write!(fmt, "Pseudo(CalleeAfter)"),
-            Pseudo::CallerBefore => write!(fmt, "Pseudo(CallerBefore)"),
-            Pseudo::CallerAfter => write!(fmt, "Pseudo(CallerAfter)"),
-        }
-    }
+#[derive(Clone)]
+pub enum Element {
+    Instruction(Instruction),
+    Argument(Argument),
+    Blank,
+}
+
+impl Default for Element {
+    fn default() -> Self { Element::Blank }
 }
 
 impl fmt::Display for Element {
@@ -192,9 +174,7 @@ impl fmt::Display for Element {
         match self {
             Element::Instruction(instruction) => write!(fmt, "{}", instruction),
             Element::Argument(argument) => write!(fmt, "{}", argument),
-            Element::Pseudo(pseudo) => write!(fmt, "{}", pseudo),
             Element::Blank => write!(fmt, "Blank"),
         }
     }
 }
-

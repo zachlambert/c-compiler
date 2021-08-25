@@ -1,6 +1,6 @@
 
-use super::generator::Generator;
 use super::construct::*;
+use super::generator::Generator;
 
 use super::structure::fully_define_structure;
 use super::function::generate_function;

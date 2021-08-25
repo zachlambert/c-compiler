@@ -1,6 +1,6 @@
 
+use super::construct::*;
 use super::generator::Generator;
-use crate::parser::construct::*;
 
 
 fn get_primitive_size(primitive: &Primitive) -> usize {

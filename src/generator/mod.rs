@@ -11,6 +11,7 @@ use instructions::Element;
 use generator::Generator;
 use content::generate_program;
 
+
 pub fn generate_instructions(ast: &mut Ast) -> Vec<Element> {
     let mut instructions: Vec<Element> = Vec::new();
     let mut generator = Generator::new(ast, &mut instructions);
