@@ -1,19 +1,15 @@
 
 pub mod instructions;
 mod generator;
-mod symbol;
-mod datatype;
-mod structure;
-mod program;
-// mod content;
-// mod function;
-// mod statement;
-// mod expression;
+mod content;
+mod statement;
 
 use crate::parser::ast::Ast;
+use crate::parser::construct;
+
 use instructions::Element;
 use generator::Generator;
-use program::generate_program;
+use content::generate_program;
 
 pub fn generate_instructions(ast: &mut Ast) -> Vec<Element> {
     let mut instructions: Vec<Element> = Vec::new();

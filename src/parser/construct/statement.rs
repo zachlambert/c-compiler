@@ -18,7 +18,7 @@ impl fmt::Display for Control {
 
 #[derive(Clone)]
 pub enum Statement {
-    Declare,
+    // Declare,
     // identifier , ":" datatype , ";"
 
     Assign,
@@ -43,7 +43,6 @@ pub enum Statement {
 impl fmt::Display for Statement {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Statement::Declare => write!(fmt, "Statement(Declare)"),
             Statement::Assign => write!(fmt, "Statement(Assign)"),
             Statement::Return => write!(fmt, "Statement(Return)"),
             Statement::Conditional => write!(fmt, "Statement(Conditional)"),
