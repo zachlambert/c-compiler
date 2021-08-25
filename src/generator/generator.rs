@@ -18,6 +18,8 @@ struct Mapping {
     pub node_i: usize,
     pub prev: Option<usize>,
     pub name: String,
+    // Depth of internal functions on creation. = 0 if unrestricted access to internal functions.
+    pub function_depth: usize,
 }
 
 pub struct Generator<'a> {
@@ -25,8 +27,9 @@ pub struct Generator<'a> {
     instructions: &'a mut Vec<Element>,
     table: HashMap<String, usize>, // mapping index
     mappings: Vec<Mapping>,
-    scope: Vec<usize>, // stack of the start of valid mappings
+    scope: Vec<usize>, // stack of the start of mappings for each scope
     tree_stack: Vec<usize>,
+    function_depth: usize, // Depth of internal functions to determine which local variables are accessible
 }
 
 impl<'a> Generator<'a> {
@@ -39,6 +42,7 @@ impl<'a> Generator<'a> {
             mappings: Vec::new(),
             scope: Vec::new(),
             tree_stack: Vec::new(),
+            function_depth: 0,
         };
         generator.tree_stack.push(start_i);
         return generator;
@@ -69,14 +73,8 @@ impl<'a> Generator<'a> {
         }
     }
 
-    pub fn down_ref(&mut self) {
-        let node_i = *self.tree_stack.last()
-            .expect("Tried to call down() on an empty tree_stack");
-        if let Construct::Reference(ref_id) = self.ast.nodes[node_i].construct {
-            self.tree_stack.push(ref_id);
-        } else {
-            panic!("Called down_ref, but node isn't a reference");
-        }
+    pub fn down_ref(&mut self, ref_id: usize) {
+        self.tree_stack.push(ref_id);
     }
 
     pub fn up(&mut self) {
@@ -105,13 +103,18 @@ impl<'a> Generator<'a> {
     pub fn find_symbol(&self, name: &String) -> Option<usize> {
         match self.table.get(name) {
             Some(index) => {
-                return Some(self.mappings[*index].node_i);
+                let mapping = &self.mappings[*index];
+                if mapping.function_depth == 0 || mapping.function_depth == self.function_depth {
+                    return Some(mapping.node_i);
+                } else {
+                    return None;
+                }
             },
             _ => return None,
         }
     }
 
-    pub fn add_symbol(&mut self, name: &String) {
+    pub fn add_symbol(&mut self, name: &String, block_function_access: bool) {
         let node_i = *self.tree_stack.last()
             .expect("Tried to call add_symbol() on an empty tree_stack");
         let prev = match self.table.get(name) {
@@ -122,6 +125,7 @@ impl<'a> Generator<'a> {
             node_i: node_i,
             prev: prev,
             name: String::clone(name),
+            function_depth: if block_function_access {self.function_depth} else {0},
         };
         self.table.insert(String::clone(name), self.mappings.len());
         self.mappings.push(mapping);
@@ -148,9 +152,24 @@ impl<'a> Generator<'a> {
         }
     }
 
+    pub fn increase_scope_function(&mut self) {
+        self.increase_scope();
+        self.function_depth += 1;
+    }
+
+    pub fn decrease_scope_function(&mut self) {
+        self.decrease_scope();
+        self.function_depth -= 1;
+    }
+
     pub fn replace_construct(&mut self, construct: &Construct) {
         let node_i = *self.tree_stack.last()
             .expect("Tried to call replace_construct() on an empty tree_stack");
         self.ast.nodes[node_i].construct = Construct::clone(construct);
+    }
+
+    pub fn get_ref_id(&self) -> usize {
+        return *self.tree_stack.last()
+            .expect("Tried to call get_ref_id() on an empty tree_stack");
     }
 }

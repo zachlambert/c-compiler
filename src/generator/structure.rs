@@ -1,7 +1,6 @@
 
 use super::generator::Generator;
 use crate::parser::construct::*;
-use super::datatype::resolve_datatype;
 
 
 fn get_primitive_size(primitive: &Primitive) -> usize {
@@ -20,11 +19,11 @@ fn get_primitive_size(primitive: &Primitive) -> usize {
     }
 }
 
-fn get_reference_size(generator: &mut Generator) -> usize {
+fn get_reference_size(generator: &mut Generator, ref_id: usize) -> usize {
     // Current node = Primitive::Reference(ref_id)
     // Instead of down to child, follows ref to new ref_id
     // on up() again, will return to ref node.
-    generator.down_ref(); 
+    generator.down_ref(ref_id); 
     let mut size = match generator.current() {
         Construct::Structure(_, size) => *size,
         _ => panic!("Reference doesn't point to a structure node"),
@@ -46,7 +45,7 @@ fn find_member_size(generator: &mut Generator) -> usize {
                     generator.down();
                     let size = match generator.current() {
                         Construct::Primitive(primitive) => get_primitive_size(primitive),
-                        Construct::Reference(_) => get_reference_size(generator),
+                        Construct::Reference(ref_id) => get_reference_size(generator, *ref_id),
                         Construct::Identifier(_) => panic!("Struct datatype not resolved"),
                         _ => panic!("Unexpected child node of Datatype::Terminal"),
                     };
@@ -79,7 +78,6 @@ pub fn fully_define_structure(generator: &mut Generator) -> usize {
     let mut alignment: usize = 0;
     generator.down();
     loop {
-        resolve_datatype(generator);
         let member_size = find_member_size(generator);
         // Need to offset size to align the member
         if member_size > alignment {
