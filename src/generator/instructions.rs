@@ -1,18 +1,21 @@
 
 use std::fmt;
 
+#[derive(Clone)]
 pub enum ALUOp {
     Add,
     Sub,
     // TODO
 }
 
+#[derive(Clone)]
 pub enum Condition {
     Equal,
     LessThan,
     // TODO
 }
 
+#[derive(Clone)]
 pub enum Instruction {
     Store, // Register -> Memory
     Load,  // Memory -> Register
@@ -25,18 +28,21 @@ pub enum Instruction {
     Label, // Put a label here
 }
 
+#[derive(Clone)]
 pub enum RegisterType {
     Int,
     Float,
     StackPointer,
 }
 
+#[derive(Clone)]
 pub struct Register {
     index: u8,       // Index of register
     volatile: bool,  // Volatile or non-volatile register
     reg_type: RegisterType,
 }
 
+#[derive(Clone)]
 pub enum Memory {
     Label,          // Memory[label]
     Offset,         // Memory[reg + offset]
@@ -44,12 +50,14 @@ pub enum Memory {
     OffsetStride,   // Memory[reg + stride*i(reg2) + j(reg3)]
 }
 
+#[derive(Clone)]
 pub enum Constant {
     Int(i64),
     Float(f64),
     Str(String),
 }
 
+#[derive(Clone)]
 pub enum Argument {
     Label(String),       // Assembly label
     Register(Register),
@@ -58,9 +66,25 @@ pub enum Argument {
     Integer(i64),        // Offset or stride
 }
 
+#[derive(Clone)]
+pub enum Pseudo { // Pseudoinstructions
+    // Code required to save/restore temporary and saved registers.
+    CallerBefore, // Code required by caller before a procedure call
+    CallerAfter,  // Code requierd by caller after a produre call
+    CalleeBefore, // Code required by a callee before procedure content
+    CalleeAfter,  // Code required by a callee after procedure content
+}
+
+#[derive(Clone)]
 pub enum Element {
     Instruction(Instruction),
     Argument(Argument),
+    Pseudo(Pseudo),
+    Blank,
+}
+
+impl Default for Element {
+    fn default() -> Self { Element::Blank }
 }
 
 // Store an array of elements to encode instructions.
@@ -130,7 +154,6 @@ impl fmt::Display for Memory {
         }
     }
 }
-
 impl fmt::Display for Constant {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -153,11 +176,24 @@ impl fmt::Display for Argument {
     }
 }
 
+impl fmt::Display for Pseudo {
+    fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Pseudo::CalleeBefore => write!(fmt, "Pseudo(CalleeBefore)"),
+            Pseudo::CalleeAfter => write!(fmt, "Pseudo(CalleeAfter)"),
+            Pseudo::CallerBefore => write!(fmt, "Pseudo(CallerBefore)"),
+            Pseudo::CallerAfter => write!(fmt, "Pseudo(CallerAfter)"),
+        }
+    }
+}
+
 impl fmt::Display for Element {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Element::Instruction(instruction) => write!(fmt, "{}", instruction),
             Element::Argument(argument) => write!(fmt, "{}", argument),
+            Element::Pseudo(pseudo) => write!(fmt, "{}", pseudo),
+            Element::Blank => write!(fmt, "Blank"),
         }
     }
 }

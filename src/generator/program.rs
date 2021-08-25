@@ -4,6 +4,7 @@ use crate::parser::construct::*;
 use super::symbol::check_for_symbol;
 use super::symbol::resolve_symbol_datatypes;
 use super::structure::fully_define_structure;
+use super::instructions::*;
 
 fn resolve_content(generator: &mut Generator) {
     // Current node = program or body
@@ -56,6 +57,8 @@ fn generate_content(generator: &mut Generator) {
             }
             _ => (),
         }
+        // Temporary
+        generator.add_element(Element::Instruction(Instruction::Call));
         if !generator.next() {
             break;
         }
@@ -64,11 +67,21 @@ fn generate_content(generator: &mut Generator) {
 }
 
 pub fn generate_function(generator: &mut Generator) {
-    match generator.current() {
-        Construct::Function(_) => (),
+    let mut name = match generator.current() {
+        Construct::Function(name) => String::clone(name),
         _ => panic!("Node at generate_function() is not a function"),
-    }
+    };
     generator.increase_scope_function();
+
+    generator.add_element(Element::Instruction(Instruction::Label));
+    if name != "main" {
+        name.push_str("__");
+        name.push_str(&generator.get_ref_id().to_string());
+    } else {
+        name = String::from("_start");
+    }
+    generator.add_element(Element::Argument(Argument::Label(name)));
+
     generator.down();
 
     // Add symbols for arguments and return values. (return values have pseudonames)

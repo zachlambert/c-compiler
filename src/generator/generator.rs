@@ -1,8 +1,9 @@
 
+use std::mem;
 use crate::parser::ast::Ast;
 use crate::parser::construct::Construct;
 use std::collections::HashMap;
-use super::instructions::Element;
+use super::instructions::*;
 
 // Mappings: [ main, func1, global_var, argc, argv, x, ... ]
 //           <--  scope 0 ----------> < --- scope 1 --> etc
@@ -29,7 +30,7 @@ pub struct Generator<'a> {
     mappings: Vec<Mapping>,
     scope: Vec<usize>, // stack of the start of mappings for each scope
     tree_stack: Vec<usize>,
-    function_depth: usize, // Depth of internal functions to determine which local variables are accessible
+    function_stack: Vec<usize>, // Stack of index within instructions for function start
 }
 
 impl<'a> Generator<'a> {
@@ -42,7 +43,7 @@ impl<'a> Generator<'a> {
             mappings: Vec::new(),
             scope: Vec::new(),
             tree_stack: Vec::new(),
-            function_depth: 0,
+            function_stack: Vec::new(),
         };
         generator.tree_stack.push(start_i);
         return generator;
@@ -104,7 +105,7 @@ impl<'a> Generator<'a> {
         match self.table.get(name) {
             Some(index) => {
                 let mapping = &self.mappings[*index];
-                if mapping.function_depth == 0 || mapping.function_depth == self.function_depth {
+                if mapping.function_depth == 0 || mapping.function_depth == self.function_stack.len() {
                     return Some(mapping.node_i);
                 } else {
                     return None;
@@ -125,7 +126,7 @@ impl<'a> Generator<'a> {
             node_i: node_i,
             prev: prev,
             name: String::clone(name),
-            function_depth: if block_function_access {self.function_depth} else {0},
+            function_depth: if block_function_access {self.function_stack.len()} else {0},
         };
         self.table.insert(String::clone(name), self.mappings.len());
         self.mappings.push(mapping);
@@ -154,12 +155,41 @@ impl<'a> Generator<'a> {
 
     pub fn increase_scope_function(&mut self) {
         self.increase_scope();
-        self.function_depth += 1;
+        self.function_stack.push(self.instructions.len());
     }
 
     pub fn decrease_scope_function(&mut self) {
         self.decrease_scope();
-        self.function_depth -= 1;
+        let internal = self.function_stack.pop().expect("Invalid function_stack");
+        let parent = match self.function_stack.pop() {
+            Some(parent) => parent,
+            None => return, // decrease into global scope, don't need to rearrange
+        };
+        // Current instructions:
+        // [<- parent -><- internal ->]
+        // Want:
+        // [<- internal -><- parent -> (can continue with parent) ]
+        let internal_size = self.instructions.len() - internal;
+        let parent_size = internal - parent;
+
+        // Easiest way to do this is:
+        // [<- parent -><- internal ->]
+        // [<- parent ->--------------<- internal ->]
+        // [--------------<- parent -><- internal ->]
+        // [<- internal -><- parent ->]
+        for i in 0..internal_size {
+            let element = mem::take(&mut self.instructions[internal+i]);
+            self.instructions.push(element);
+        }
+        for i in parent_size-1..0 { // Reverse order to avoid overwriting self
+            self.instructions[internal-parent_size+i] = mem::take(&mut self.instructions[parent+i]);
+        }
+        for i in internal_size-1..0 {
+            self.instructions[parent+i] = self.instructions.pop().expect("");
+        }
+
+        let new_parent = parent + internal_size;
+        self.function_stack.push(new_parent);
     }
 
     pub fn replace_construct(&mut self, construct: &Construct) {
@@ -171,5 +201,9 @@ impl<'a> Generator<'a> {
     pub fn get_ref_id(&self) -> usize {
         return *self.tree_stack.last()
             .expect("Tried to call get_ref_id() on an empty tree_stack");
+    }
+
+    pub fn add_element(&mut self, element: Element) {
+        self.instructions.push(element);
     }
 }
