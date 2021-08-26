@@ -5,6 +5,8 @@ use super::instructions::*;
 
 use super::content::generate_content;
 use super::content::resolve_content;
+use super::expression::generate_expression_lvalue;
+use super::expression::generate_expression_rvalue;
 
 
 fn generate_statement_block(generator: &mut Generator) {
@@ -18,7 +20,19 @@ fn generate_statement_block(generator: &mut Generator) {
 }
 
 fn generate_statement_assign(generator: &mut Generator) {
+    // Current node = Statement::Assign
     // Children: expression1, expression2
+    generator.down();
+    let (instruction, dest_symbol, dest_datatype_i) = generate_expression_lvalue(generator);
+    generator.next();
+    let (src_symbol, src_datatype_i) = generate_expression_rvalue(generator);
+    generator.up();
+
+    // TODO: Assert src_datatype = dst_datatype
+
+    generator.add_element(Element::Instruction(instruction)); // Move, load or store
+    generator.add_element(Element::Argument(Argument::Symbol(src_symbol)));
+    generator.add_element(Element::Argument(Argument::Symbol(dest_symbol)));
 }
 
 fn generate_statement_return(generator: &mut Generator) {

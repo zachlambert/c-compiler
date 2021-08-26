@@ -21,6 +21,7 @@ struct Mapping {
     pub name: String,
     // Depth of internal functions on creation. = 0 if unrestricted access to internal functions.
     pub function_depth: usize,
+    pub version: usize,
 }
 
 pub struct Generator<'a> {
@@ -117,6 +118,22 @@ impl<'a> Generator<'a> {
         }
     }
 
+    pub fn get_symbol_version(&self, name: &String) -> usize {
+        match self.table.get(name) {
+            Some(index) => {
+                let mapping = &self.mappings[*index];
+                if mapping.function_depth == 0 || mapping.function_depth == self.function_stack.len() {
+                    let version = mapping.version;
+                    mapping.version+=1;
+                    return version;
+                } else {
+                    panic!("");
+                }
+            },
+            _ => panic!(""),
+        }
+    }
+
     pub fn add_symbol(&mut self, name: &String, block_function_access: bool) {
         let node_i = *self.tree_stack.last()
             .expect("Tried to call add_symbol() on an empty tree_stack");
@@ -129,6 +146,7 @@ impl<'a> Generator<'a> {
             prev: prev,
             name: String::clone(name),
             function_depth: if block_function_access {self.function_stack.len()} else {0},
+            version: 0,
         };
         self.table.insert(String::clone(name), self.mappings.len());
         self.mappings.push(mapping);

@@ -38,7 +38,9 @@ impl fmt::Display for Condition {
 
 #[derive(Clone)]
 pub enum Instruction {
-    Move,  // Assignment. Decide between register / memory later.
+    Move,  // Move src -> dst
+    Load,  // Move Mem[src] -> dst
+    Store, // Move src -> Mem[dst]
     GetArgument, // Move argument(location) -> symbol
     SetReturned, // Move symbol -> returned(location)
     ALUOp(ALUOp),  // Result(args) -> Register
@@ -53,6 +55,8 @@ impl fmt::Display for Instruction {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Instruction::Move => write!(fmt, "Instruction(Move)"),
+            Instruction::Load => write!(fmt, "Instruction(Load)"),
+            Instruction::Store => write!(fmt, "Instruction(Store)"),
             Instruction::GetArgument => write!(fmt, "Instruction(GetArgument)"),
             Instruction::SetReturned => write!(fmt, "Instruction(SetReturned)"),
             Instruction::ALUOp(alu_op) => write!(fmt, "Instruction({})", alu_op),
