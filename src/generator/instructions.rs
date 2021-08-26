@@ -3,10 +3,11 @@ use std::fmt;
 
 // ===== Instructions =====
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum ALUOp {
     Add,
     Sub,
+    Negate,
     // TODO
 }
 
@@ -16,11 +17,12 @@ impl fmt::Display for ALUOp {
         match self {
             ALUOp::Add => write!(fmt, "ALUOp(Add)"),
             ALUOp::Sub => write!(fmt, "ALUOp(Sub)"),
+            ALUOp::Negate => write!(fmt, "ALUOp(Negate)"),
         }
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum Condition {
     Equal,
     LessThan,
@@ -36,7 +38,7 @@ impl fmt::Display for Condition {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum Instruction {
     Move,  // Move src -> dst
     Load,  // Move Mem[src] -> dst
@@ -72,7 +74,7 @@ impl fmt::Display for Instruction {
 
 // ===== Operands to instructions relating to memory =====
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum Regtype {
     Integer,
     Float,
@@ -83,10 +85,10 @@ pub enum Regtype {
 impl fmt::Display for Regtype {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Regtype::Integer => write!(fmt, "Datatype(Integer)"),
-            Regtype::Float => write!(fmt, "Datatype(Float)"),
-            Regtype::Struct => write!(fmt, "Datatype(Struct)"),
-            Regtype::Pointer => write!(fmt, "Datatype(Pointer)"),
+            Regtype::Integer => write!(fmt, "Regtype(Integer)"),
+            Regtype::Float => write!(fmt, "Regtype(Float)"),
+            Regtype::Struct => write!(fmt, "Regtype(Struct)"),
+            Regtype::Pointer => write!(fmt, "Regtype(Pointer)"),
         }
     }
 }
@@ -95,7 +97,7 @@ impl fmt::Display for Regtype {
 // return values from procedures.
 // Registers and stacks are allocated based on size and datatype. Index is used
 // to allocate in a consistent order.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct PassLocation {
     pub index: usize,
     pub size: usize,
@@ -130,7 +132,7 @@ impl fmt::Display for Symbol {
 }
 
 // Immediate value.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub enum Constant {
     Int(i64),
     Float(f64),

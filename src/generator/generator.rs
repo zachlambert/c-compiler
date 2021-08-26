@@ -33,6 +33,7 @@ pub struct Generator<'a> {
     tree_stack: Vec<usize>,
     function_stack: Vec<usize>, // Stack of index within instructions for function start
     returns: Vec<PassLocation>,
+    temp_version: usize,
 }
 
 impl<'a> Generator<'a> {
@@ -47,6 +48,7 @@ impl<'a> Generator<'a> {
             tree_stack: Vec::new(),
             function_stack: Vec::new(),
             returns: Vec::new(),
+            temp_version: 0,
         };
         generator.tree_stack.push(start_i);
         return generator;
@@ -118,10 +120,10 @@ impl<'a> Generator<'a> {
         }
     }
 
-    pub fn get_symbol_version(&self, name: &String, increment: bool) -> usize {
+    pub fn get_symbol_version(&mut self, name: &String, increment: bool) -> usize {
         match self.table.get(name) {
             Some(index) => {
-                let mapping = &self.mappings[*index];
+                let mapping = &mut self.mappings[*index];
                 if mapping.function_depth == 0 || mapping.function_depth == self.function_stack.len() {
                     let version = mapping.version;
                     if increment {
@@ -179,6 +181,7 @@ impl<'a> Generator<'a> {
         self.increase_scope();
         self.function_stack.push(self.instructions.len());
         self.returns.clear();
+        self.temp_version = 0;
     }
 
     pub fn decrease_scope_function(&mut self) {
@@ -236,5 +239,11 @@ impl<'a> Generator<'a> {
 
     pub fn return_count(&self) -> usize {
         return self.returns.len();
+    }
+
+    pub fn get_temp_version(&mut self) -> usize {
+        let version = self.temp_version;
+        self.temp_version+=1;
+        return version;
     }
 }

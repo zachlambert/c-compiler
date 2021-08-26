@@ -1,3 +1,3 @@
 [ -f code/$1.s ] || exit
-# RUST_BACKTRACE=1 target/debug/compiler code/$1.c code/$1.s
+# RUST_BACKTRACE=1 target/debug/compiler code/$1.z code/$1.s
 target/debug/compiler code/$1.z code/$1.s

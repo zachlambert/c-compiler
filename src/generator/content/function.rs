@@ -1,5 +1,4 @@
 
-use super::construct;
 use super::construct::*;
 use super::generator::Generator;
 use super::instructions::*;
@@ -14,7 +13,7 @@ fn create_pass_location(generator: &mut Generator, index: usize) -> PassLocation
     generator.down();
     let (size, regtype) = match generator.current() {
         Construct::Datatype(datatype) => match datatype {
-            construct::Datatype::Terminal => {
+            Datatype::Terminal => {
                 generator.down();
                 let result = match generator.current() {
                     Construct::Primitive(primitive) => match primitive {
@@ -36,7 +35,7 @@ fn create_pass_location(generator: &mut Generator, index: usize) -> PassLocation
                 generator.up();
                 result
             },
-            construct::Datatype::Pointer => (8, Regtype::Pointer),
+            Datatype::Pointer => (8, Regtype::Pointer),
         },
         _ => panic!("Node at create_pass_location isn't Datatype"),
     };
@@ -91,6 +90,9 @@ pub fn generate_function(generator: &mut Generator) {
             Construct::Returned => {
                 let pass_location = create_pass_location(generator, generator.return_count());
                 generator.push_return(pass_location);
+                if !generator.next() {
+                    panic!("Function node has no body child");
+                }
                 continue;
             },
             Construct::Block => break,

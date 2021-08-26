@@ -41,7 +41,7 @@ fn main() {
     // 3. Build abstract syntax tree
     let mut ast = build_ast(&tokens)
         .expect("Failed to build ast");
-    // print_ast(&ast);
+    print_ast(&ast);
 
     // 4. Resolve ast
     let instructions = generate_instructions(&mut ast);
