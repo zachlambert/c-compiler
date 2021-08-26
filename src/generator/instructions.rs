@@ -70,23 +70,23 @@ impl fmt::Display for Instruction {
 }
 
 
-// ===== Arguments to instructions relating to memory =====
+// ===== Operands to instructions relating to memory =====
 
 #[derive(Clone)]
-pub enum Datatype {
+pub enum Regtype {
     Integer,
     Float,
-    Pointer,
     Struct,
+    Pointer,
 }
 
-impl fmt::Display for Datatype {
+impl fmt::Display for Regtype {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Datatype::Integer => write!(fmt, "Datatype(Integer)"),
-            Datatype::Float => write!(fmt, "Datatype(Float)"),
-            Datatype::Pointer => write!(fmt, "Datatype(Pointer)"),
-            Datatype::Struct => write!(fmt, "Datatype(Struct)"),
+            Regtype::Integer => write!(fmt, "Datatype(Integer)"),
+            Regtype::Float => write!(fmt, "Datatype(Float)"),
+            Regtype::Struct => write!(fmt, "Datatype(Struct)"),
+            Regtype::Pointer => write!(fmt, "Datatype(Pointer)"),
         }
     }
 }
@@ -99,14 +99,14 @@ impl fmt::Display for Datatype {
 pub struct PassLocation {
     pub index: usize,
     pub size: usize,
-    pub datatype: Datatype,
+    pub regtype: Regtype,
 }
 
 impl fmt::Display for PassLocation {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt,
-               "PassLocation(index: {}, size: {}, datatype: {})",
-               self.index, self.size, self.datatype)
+               "PassLocation(index: {}, size: {}, regtype: {})",
+               self.index, self.size, self.regtype)
     }
 }
 
@@ -118,14 +118,14 @@ pub struct Symbol {
     pub name: String,
     pub version: usize,
     pub size: usize,
-    pub datatype: Datatype,
+    pub regtype: Regtype,
 }
 
 impl fmt::Display for Symbol {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt,
-               "Symbol(name: {}, version: {}, size: {}, datatype: {}",
-               self.name, self.version, self.size, self.datatype)
+               "Symbol(name: {}, version: {}, size: {}, regtype: {}",
+               self.name, self.version, self.size, self.regtype)
     }
 }
 
@@ -146,7 +146,7 @@ impl fmt::Display for Constant {
 }
 
 #[derive(Clone)]
-pub enum Argument {
+pub enum Operand {
     Label(String),       // Assembly label
     PassLocation(PassLocation),
     Symbol(Symbol),      // Generic symbol
@@ -154,14 +154,14 @@ pub enum Argument {
     Integer(i64),        // Offset or stride
 }
 
-impl fmt::Display for Argument {
+impl fmt::Display for Operand {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Argument::Label(label) => write!(fmt, "Argument(Label({}))", label),
-            Argument::PassLocation(pass_location) => write!(fmt, "Argument({})", pass_location),
-            Argument::Symbol(symbol) => write!(fmt, "Argument({})", symbol),
-            Argument::Constant(constant) => write!(fmt, "Argument({})", constant),
-            Argument::Integer(integer) => write!(fmt, "Argument(Integer({}))", integer),
+            Operand::Label(label) => write!(fmt, "Operand(Label({}))", label),
+            Operand::PassLocation(pass_location) => write!(fmt, "Operand({})", pass_location),
+            Operand::Symbol(symbol) => write!(fmt, "Operand({})", symbol),
+            Operand::Constant(constant) => write!(fmt, "Operand({})", constant),
+            Operand::Integer(integer) => write!(fmt, "Operand(Integer({}))", integer),
         }
     }
 }
@@ -169,7 +169,7 @@ impl fmt::Display for Argument {
 #[derive(Clone)]
 pub enum Element {
     Instruction(Instruction),
-    Argument(Argument),
+    Operand(Operand),
     Blank,
 }
 
@@ -181,7 +181,7 @@ impl fmt::Display for Element {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Element::Instruction(instruction) => write!(fmt, "{}", instruction),
-            Element::Argument(argument) => write!(fmt, "{}", argument),
+            Element::Operand(operand) => write!(fmt, "{}", operand),
             Element::Blank => write!(fmt, "Blank"),
         }
     }

@@ -1,7 +1,6 @@
 
 use super::construct;
-use super::construct::Construct;
-use super::construct::Primitive;
+use super::construct::*;
 use super::generator::Generator;
 use super::instructions::*;
 
@@ -13,38 +12,38 @@ fn create_pass_location(generator: &mut Generator, index: usize) -> PassLocation
     // Current node = Argument or Returned
     // Child is a datatype
     generator.down();
-    let (size, datatype) = match generator.current() {
+    let (size, regtype) = match generator.current() {
         Construct::Datatype(datatype) => match datatype {
             construct::Datatype::Terminal => {
                 generator.down();
                 let result = match generator.current() {
                     Construct::Primitive(primitive) => match primitive {
-                        Primitive::U8 => (1, Datatype::Integer),
-                        Primitive::U16 => (2, Datatype::Integer),
-                        Primitive::U32 => (4, Datatype::Integer),
-                        Primitive::U64 => (8, Datatype::Integer),
-                        Primitive::I8 => (1, Datatype::Integer),
-                        Primitive::I16 => (2, Datatype::Integer),
-                        Primitive::I32 => (4, Datatype::Integer),
-                        Primitive::I64 => (8, Datatype::Integer),
-                        Primitive::F32 => (4, Datatype::Float),
-                        Primitive::F64 => (8, Datatype::Float),
-                        Primitive::C8 => (1, Datatype::Integer),
+                        Primitive::U8 => (1, Regtype::Integer),
+                        Primitive::U16 => (2, Regtype::Integer),
+                        Primitive::U32 => (4, Regtype::Integer),
+                        Primitive::U64 => (8, Regtype::Integer),
+                        Primitive::I8 => (1, Regtype::Integer),
+                        Primitive::I16 => (2, Regtype::Integer),
+                        Primitive::I32 => (4, Regtype::Integer),
+                        Primitive::I64 => (8, Regtype::Integer),
+                        Primitive::F32 => (4, Regtype::Float),
+                        Primitive::F64 => (8, Regtype::Float),
+                        Primitive::C8 => (1, Regtype::Integer),
                     },
-                    Construct::Structure(_, size) => (*size, Datatype::Struct),
+                    Construct::Structure(_, size) => (*size, Regtype::Struct),
                     _ => panic!("Invalid child of Datatype in create_pass_location"),
                 };
                 generator.up();
                 result
             },
-            construct::Datatype::Pointer => (8, Datatype::Pointer),
+            construct::Datatype::Pointer => (8, Regtype::Pointer),
         },
         _ => panic!("Node at create_pass_location isn't Datatype"),
     };
     let pass_location = PassLocation {
         index: index,
         size: size,
-        datatype: datatype,
+        regtype: regtype,
     };
     generator.up();
     return pass_location;
@@ -55,11 +54,11 @@ fn generate_argument_get(generator: &mut Generator, argument: &PassLocation, nam
         name: String::clone(name),
         version: 0,
         size: argument.size,
-        datatype: Datatype::clone(&argument.datatype),
+        regtype: Regtype::clone(&argument.regtype),
     };
     generator.add_element(Element::Instruction(Instruction::GetArgument));
-    generator.add_element(Element::Argument(Argument::PassLocation(PassLocation::clone(argument))));
-    generator.add_element(Element::Argument(Argument::Symbol(symbol)));
+    generator.add_element(Element::Operand(Operand::PassLocation(PassLocation::clone(argument))));
+    generator.add_element(Element::Operand(Operand::Symbol(symbol)));
 }
 
 pub fn generate_function(generator: &mut Generator) {
@@ -77,7 +76,7 @@ pub fn generate_function(generator: &mut Generator) {
     } else {
         name = String::from("_start");
     }
-    generator.add_element(Element::Argument(Argument::Label(name)));
+    generator.add_element(Element::Operand(Operand::Label(name)));
 
     generator.down();
 

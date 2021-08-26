@@ -118,13 +118,15 @@ impl<'a> Generator<'a> {
         }
     }
 
-    pub fn get_symbol_version(&self, name: &String) -> usize {
+    pub fn get_symbol_version(&self, name: &String, increment: bool) -> usize {
         match self.table.get(name) {
             Some(index) => {
                 let mapping = &self.mappings[*index];
                 if mapping.function_depth == 0 || mapping.function_depth == self.function_stack.len() {
                     let version = mapping.version;
-                    mapping.version+=1;
+                    if increment {
+                        mapping.version+=1;
+                    }
                     return version;
                 } else {
                     panic!("");

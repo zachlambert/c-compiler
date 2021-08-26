@@ -31,8 +31,8 @@ fn generate_statement_assign(generator: &mut Generator) {
     // TODO: Assert src_datatype = dst_datatype
 
     generator.add_element(Element::Instruction(instruction)); // Move, load or store
-    generator.add_element(Element::Argument(Argument::Symbol(src_symbol)));
-    generator.add_element(Element::Argument(Argument::Symbol(dest_symbol)));
+    generator.add_element(Element::Operand(Operand::Symbol(src_symbol)));
+    generator.add_element(Element::Operand(Operand::Symbol(dest_symbol)));
 }
 
 fn generate_statement_return(generator: &mut Generator) {

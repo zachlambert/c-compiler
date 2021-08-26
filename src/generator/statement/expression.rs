@@ -5,22 +5,33 @@ use super::instructions::*;
 
 
 fn get_symbol_datatype_i(generator: &mut Generator, symbol_i: usize) -> usize {
+    // Current node = <doesn't matter>
+    generator.down_ref(symbol_i);
+    // Current node = Variable
     match generator.current() {
         Construct::Variable(_) => (),
         _ => panic!(""),
     }
     generator.down();
+    // Current node = datatype, return this
     let datatype_i = generator.get_ref_id();
+    generator.up();
     generator.up();
     return datatype_i;
 }
 
 fn get_pointer_datatype_i(generator: &mut Generator, symbol_i: usize) -> usize {
+    // Current node = <doesn't matter>
+    generator.down_ref(symbol_i);
+
+    // Current node = Variable
     match generator.current() {
         Construct::Variable(_) => (),
         _ => panic!(""),
     }
     generator.down();
+
+    // Current node = datatype, expect Datatype::Pointer
     match generator.current() {
         Construct::Datatype(datatype) => match datatype {
             Datatype::Pointer => (),
@@ -28,14 +39,48 @@ fn get_pointer_datatype_i(generator: &mut Generator, symbol_i: usize) -> usize {
         },
         _ => panic!(""),
     }
+    generator.down();
+
+    // Current level = { qualiifier } , datatype
+    // Ignore qualifiers, not relevant
+    let mut mutable = false;
+    loop {
+        match generator.current() {
+            Construct::Datatype(_) => break,
+            _ => (),
+        }
+        if !generator.next() {
+            panic!("Pointer node didn't have datatype child");
+        }
+    }
+    // Current node = datatype
     let datatype_i = generator.get_ref_id();
+
+    generator.up();
+    generator.up();
     generator.up();
     return datatype_i;
 }
 
 
 fn get_lvalue_identifier(generator: &mut Generator) -> (Symbol, usize) {
-    // Current node = Construct::Identifier
+    // Current node = Construct::Expression(Expression::Identifier)
+    generator.down();
+    let name = match generator.current() {
+        Construct::Identifier(name_) => String::clone(name_),
+        _ => panic!(""),
+    };
+    let symbol_i = generator.find_symbol(&name).expect("Failed to resolve symbol");
+    let datatype_i = get_symbol_datatype_i(generator, symbol_i);
+    let version = generator.get_symbol_version(&name, true);
+    generator.up();
+    let symbol = Symbol {
+        name: String::clone(&name),
+        version: version,
+        size: 8,
+        regtype: Regtype::Pointer,
+    };
+    return (symbol, datatype_i);
 }
 
 fn get_lvalue_pointer(generator: &mut Generator) -> (Symbol, usize) {
@@ -50,10 +95,13 @@ fn get_lvalue_pointer(generator: &mut Generator) -> (Symbol, usize) {
                 };
                 let symbol_i = generator.find_symbol(&name).expect("Failed to resolve symbol");
                 let datatype_i = get_pointer_datatype_i(generator, symbol_i);
-                let version = generator.get_symbol_version(&name);
+                let version = generator.get_symbol_version(&name, true);
                 generator.up();
                 let symbol = Symbol {
-
+                    name: String::clone(&name),
+                    version: version,
+                    size: 8,
+                    regtype: Regtype::Pointer,
                 };
                 return (symbol, datatype_i);
             },
