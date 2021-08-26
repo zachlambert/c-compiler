@@ -73,6 +73,7 @@ pub enum Datatype {
     Integer,
     Float,
     Pointer,
+    Struct,
 }
 
 impl fmt::Display for Datatype {
@@ -81,6 +82,7 @@ impl fmt::Display for Datatype {
             Datatype::Integer => write!(fmt, "Datatype(Integer)"),
             Datatype::Float => write!(fmt, "Datatype(Float)"),
             Datatype::Pointer => write!(fmt, "Datatype(Pointer)"),
+            Datatype::Struct => write!(fmt, "Datatype(Struct)"),
         }
     }
 }
@@ -91,15 +93,15 @@ impl fmt::Display for Datatype {
 // to allocate in a consistent order.
 #[derive(Clone)]
 pub struct PassLocation {
-    index: usize,
-    size: usize,
-    datatype: Datatype,
+    pub index: usize,
+    pub size: usize,
+    pub datatype: Datatype,
 }
 
 impl fmt::Display for PassLocation {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         write!(fmt,
-               "PassLocation(index: {}, size: {}, datatype: {}",
+               "PassLocation(index: {}, size: {}, datatype: {})",
                self.index, self.size, self.datatype)
     }
 }
@@ -109,10 +111,10 @@ impl fmt::Display for PassLocation {
 // Also stores size and datatype to inform instructions that operate on them.
 #[derive(Clone)]
 pub struct Symbol {
-    name: String,
-    version: usize,
-    size: usize,
-    datatype: Datatype,
+    pub name: String,
+    pub version: usize,
+    pub size: usize,
+    pub datatype: Datatype,
 }
 
 impl fmt::Display for Symbol {
@@ -142,6 +144,7 @@ impl fmt::Display for Constant {
 #[derive(Clone)]
 pub enum Argument {
     Label(String),       // Assembly label
+    PassLocation(PassLocation),
     Symbol(Symbol),      // Generic symbol
     Constant(Constant),
     Integer(i64),        // Offset or stride
@@ -151,6 +154,7 @@ impl fmt::Display for Argument {
     fn fmt (&self, fmt: &mut std::fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Argument::Label(label) => write!(fmt, "Argument(Label({}))", label),
+            Argument::PassLocation(pass_location) => write!(fmt, "Argument({})", pass_location),
             Argument::Symbol(symbol) => write!(fmt, "Argument({})", symbol),
             Argument::Constant(constant) => write!(fmt, "Argument({})", constant),
             Argument::Integer(integer) => write!(fmt, "Argument(Integer({}))", integer),

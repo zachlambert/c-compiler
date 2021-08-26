@@ -35,9 +35,9 @@ pub enum Construct {
     // datatype
     // Variable created in function argument list
 
-    Returned(String), // name
+    Returned,
     // datatype
-    // Variable created in function return list. May be referred to implicitly.
+    // Variable created in function return list.
 
     Member(String, usize), // name, offset
     // bytes , datatype
@@ -81,7 +81,7 @@ impl fmt::Display for Construct {
             Construct::Variable(name) => write!(fmt, "Variable({})", name),
 
             Construct::Argument(name) => write!(fmt, "Argument({})", name),
-            Construct::Returned(name) => write!(fmt, "Returned({})", name),
+            Construct::Returned => write!(fmt, "Returned"),
             Construct::Member(name, offset) => write!(fmt, "Member({}, offset={})", name, offset),
 
             Construct::Block => write!(fmt, "Block"),

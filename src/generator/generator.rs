@@ -31,6 +31,7 @@ pub struct Generator<'a> {
     scope: Vec<usize>, // stack of the start of mappings for each scope
     tree_stack: Vec<usize>,
     function_stack: Vec<usize>, // Stack of index within instructions for function start
+    returns: Vec<PassLocation>,
 }
 
 impl<'a> Generator<'a> {
@@ -44,6 +45,7 @@ impl<'a> Generator<'a> {
             scope: Vec::new(),
             tree_stack: Vec::new(),
             function_stack: Vec::new(),
+            returns: Vec::new(),
         };
         generator.tree_stack.push(start_i);
         return generator;
@@ -156,6 +158,7 @@ impl<'a> Generator<'a> {
     pub fn increase_scope_function(&mut self) {
         self.increase_scope();
         self.function_stack.push(self.instructions.len());
+        self.returns.clear();
     }
 
     pub fn decrease_scope_function(&mut self) {
@@ -205,5 +208,13 @@ impl<'a> Generator<'a> {
 
     pub fn add_element(&mut self, element: Element) {
         self.instructions.push(element);
+    }
+
+    pub fn push_return(&mut self, pass_location: PassLocation) {
+        self.returns.push(pass_location);
+    }
+
+    pub fn return_count(&self) -> usize {
+        return self.returns.len();
     }
 }

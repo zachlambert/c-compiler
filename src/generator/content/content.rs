@@ -72,7 +72,7 @@ fn resolve_function(generator: &mut Generator) {
     loop {
         match generator.current() {
             Construct::Argument(_) => (),
-            Construct::Returned(_) => (),
+            Construct::Returned => (),
             _ => break,
         }
         resolve_datatype(generator);

@@ -38,21 +38,17 @@ fn match_argument(parser: &mut Parser) -> bool {
     return true;
 }
 
-fn match_returned(parser: &mut Parser, return_count: usize) -> bool {
+fn match_returned(parser: &mut Parser) -> bool {
     parser.start_node();
 
     // datatype
-
-    let mut name = String::new();
-    name.push_str("__return_");
-    name.push_str(&return_count.to_string());
 
     if !match_datatype(parser) {
         parser.discard_node();
         return false;
     }
 
-    let construct = Construct::Returned(String::clone(&name));
+    let construct = Construct::Returned;
     parser.confirm_node(&construct);
 
     return true;
@@ -132,26 +128,23 @@ pub fn match_function(parser: &mut Parser) -> bool {
                 Token::LessThan => (),
                 _ => panic!("Expected '>' after '-' to form ->"),
             }
-            if !match_returned(parser, 0) {
+            if !match_returned(parser) {
                 match parser.consume_token() {
                     Token::LParen => (),
                     _ => panic!("Expected return type or '(' after function(...)->"),
                 }
-                let mut return_count : usize = 0;
-                if !match_returned(parser, return_count) {
+                if !match_returned(parser) {
                     panic!("Expected return type in ->()");
                 }
-                return_count+=1;
                 loop {
                     match parser.peek_token() {
                         Token::Comma => (),
                         _ => break,
                     }
                     parser.consume_token();
-                    if !match_returned(parser, return_count) {
+                    if !match_returned(parser) {
                         panic!("Expected return type after ,");
                     }
-                    return_count+=1;
                 }
                 match parser.consume_token() {
                     Token::RParen => (),
