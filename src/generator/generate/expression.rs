@@ -2,98 +2,8 @@
 use super::construct::*;
 use super::generator::Generator;
 use super::instructions::*;
-
-// TODO: Move this to separate file
-fn get_datatype_reg(generator: &mut Generator) -> (usize, Regtype) {
-    // Current node = Datatype
-    let (size, regtype) = match generator.current() {
-        Construct::Datatype(datatype) => match datatype {
-            Datatype::Terminal => {
-                generator.down();
-                let result = match generator.current() {
-                    Construct::Primitive(primitive) => match primitive {
-                        Primitive::U8 => (1, Regtype::Integer),
-                        Primitive::U16 => (2, Regtype::Integer),
-                        Primitive::U32 => (4, Regtype::Integer),
-                        Primitive::U64 => (8, Regtype::Integer),
-                        Primitive::I8 => (1, Regtype::Integer),
-                        Primitive::I16 => (2, Regtype::Integer),
-                        Primitive::I32 => (4, Regtype::Integer),
-                        Primitive::I64 => (8, Regtype::Integer),
-                        Primitive::F32 => (4, Regtype::Float),
-                        Primitive::F64 => (8, Regtype::Float),
-                        Primitive::C8 => (1, Regtype::Integer),
-                    },
-                    Construct::Structure(_, size) => (*size, Regtype::Struct),
-                    _ => panic!("Invalid child of Datatype in create_pass_location"),
-                };
-                generator.up();
-                result
-            },
-            Datatype::Pointer => (8, Regtype::Pointer),
-        },
-        _ => panic!("Node at create_pass_location isn't Datatype"),
-    };
-    return (size, regtype);
-}
-
-fn get_symbol_datatype_i(generator: &mut Generator, symbol_i: usize) -> (usize, usize, Regtype) {
-    // Current node = <doesn't matter>
-    generator.down_ref(symbol_i);
-    // Current node = Variable
-    match generator.current() {
-        Construct::Variable(_) => (),
-        _ => panic!(""),
-    }
-    generator.down();
-    // Current node = datatype, return this
-    let datatype_i = generator.get_ref_id();
-    let (size, regtype) = get_datatype_reg(generator);
-    generator.up();
-    generator.up();
-    return (datatype_i, size, regtype);
-}
-
-fn get_pointer_datatype_i(generator: &mut Generator, symbol_i: usize) -> usize {
-    // Current node = <doesn't matter>
-    generator.down_ref(symbol_i);
-
-    // Current node = Variable
-    match generator.current() {
-        Construct::Variable(_) => (),
-        _ => panic!(""),
-    }
-    generator.down();
-
-    // Current node = datatype, expect Datatype::Pointer
-    match generator.current() {
-        Construct::Datatype(datatype) => match datatype {
-            Datatype::Pointer => (),
-            _ => panic!(""),
-        },
-        _ => panic!(""),
-    }
-    generator.down();
-
-    // Current level = { qualiifier } , datatype
-    // Ignore qualifiers, not relevant
-    loop {
-        match generator.current() {
-            Construct::Datatype(_) => break,
-            _ => (),
-        }
-        if !generator.next() {
-            panic!("Pointer node didn't have datatype child");
-        }
-    }
-    // Current node = datatype
-    let datatype_i = generator.get_ref_id();
-
-    generator.up();
-    generator.up();
-    generator.up();
-    return datatype_i;
-}
+use super::datatype::get_symbol_datatype;
+use super::datatype::get_pointer_datatype;
 
 
 fn get_symbol_identifier(generator: &mut Generator, lvalue: bool) -> (Symbol, usize) {
@@ -103,16 +13,16 @@ fn get_symbol_identifier(generator: &mut Generator, lvalue: bool) -> (Symbol, us
         _ => panic!(""),
     };
     let symbol_i = generator.find_symbol(&name).expect("Failed to resolve symbol");
-    let (datatype_i, size, regtype) = get_symbol_datatype_i(generator, symbol_i);
+    let (datatype_node_i, datatype_info) = get_symbol_datatype(generator, symbol_i);
     let version = generator.get_symbol_version(&name, lvalue); // Increment if setting lvalue
 
     let symbol = Symbol {
         name: String::clone(&name),
         version: version,
-        size: size,
-        regtype: regtype,
+        size: datatype_info.size,
+        regtype: datatype_info.regtype,
     };
-    return (symbol, datatype_i);
+    return (symbol, datatype_node_i);
 }
 
 fn get_lvalue_pointer(generator: &mut Generator) -> (Symbol, usize) {
@@ -126,7 +36,7 @@ fn get_lvalue_pointer(generator: &mut Generator) -> (Symbol, usize) {
                     _ => panic!(""),
                 };
                 let symbol_i = generator.find_symbol(&name).expect("Failed to resolve symbol");
-                let datatype_i = get_pointer_datatype_i(generator, symbol_i);
+                let datatype_node_i = get_pointer_datatype(generator, symbol_i);
                 let version = generator.get_symbol_version(&name, true);
                 generator.up();
                 let symbol = Symbol {
@@ -135,7 +45,7 @@ fn get_lvalue_pointer(generator: &mut Generator) -> (Symbol, usize) {
                     size: 8,
                     regtype: Regtype::Pointer,
                 };
-                return (symbol, datatype_i);
+                return (symbol, datatype_node_i);
             },
             _ => panic!("Dereferencing expressions not implemented yet"),
         },

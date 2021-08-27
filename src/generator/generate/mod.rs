@@ -1,14 +1,14 @@
 
 mod content;
-mod program;
 mod function;
-mod structure;
+mod statement;
+mod expression;
+mod datatype;
 
-use super::statement;
 use super::generator;
 use super::instructions;
 use super::construct;
+use super::resolve;
 
-pub use program::generate_program;
 pub use content::generate_content;
-pub use content::resolve_content;
+pub use statement::generate_statement;

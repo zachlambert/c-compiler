@@ -4,7 +4,7 @@ use super::generator::Generator;
 use super::instructions::*;
 
 use super::content::generate_content;
-use super::content::resolve_content;
+use super::resolve::resolve_content;
 use super::expression::generate_expression_lvalue;
 use super::expression::generate_expression_rvalue;
 

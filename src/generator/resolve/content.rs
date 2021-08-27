@@ -3,15 +3,12 @@ use super::construct::*;
 use super::generator::Generator;
 
 use super::structure::fully_define_structure;
-use super::function::generate_function;
-use super::statement::generate_statement;
 
 
 fn resolve_datatype_terminal(generator: &mut Generator) {
     // Current node is Datatype::Terminal
     // Child is identifier, terminal (or reference when resolved)
     // If it is an identifier, change construct to a reference
-    
     generator.down();
     let identifier = match generator.current() {
         Construct::Identifier(identifier) => identifier,
@@ -146,19 +143,3 @@ pub fn resolve_content(generator: &mut Generator) {
 
     generator.up();
 }
-
-pub fn generate_content(generator: &mut Generator) {
-    generator.down();
-    loop {
-        match generator.current() {
-            Construct::Function(_) => generate_function(generator),
-            Construct::Statement(_) => generate_statement(generator),
-            _ => (),
-        }
-        if !generator.next() {
-            break;
-        }
-    }
-    generator.up();
-}
-

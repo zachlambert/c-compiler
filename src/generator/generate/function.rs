@@ -3,46 +3,20 @@ use super::construct::*;
 use super::generator::Generator;
 use super::instructions::*;
 
-use super::content::resolve_content;
+use super::resolve::resolve_content;
 use super::content::generate_content;
+use super::datatype::get_datatype_info;
 
 
 fn create_pass_location(generator: &mut Generator, index: usize) -> PassLocation {
     // Current node = Argument or Returned
     // Child is a datatype
     generator.down();
-    let (size, regtype) = match generator.current() {
-        Construct::Datatype(datatype) => match datatype {
-            Datatype::Terminal => {
-                generator.down();
-                let result = match generator.current() {
-                    Construct::Primitive(primitive) => match primitive {
-                        Primitive::U8 => (1, Regtype::Integer),
-                        Primitive::U16 => (2, Regtype::Integer),
-                        Primitive::U32 => (4, Regtype::Integer),
-                        Primitive::U64 => (8, Regtype::Integer),
-                        Primitive::I8 => (1, Regtype::Integer),
-                        Primitive::I16 => (2, Regtype::Integer),
-                        Primitive::I32 => (4, Regtype::Integer),
-                        Primitive::I64 => (8, Regtype::Integer),
-                        Primitive::F32 => (4, Regtype::Float),
-                        Primitive::F64 => (8, Regtype::Float),
-                        Primitive::C8 => (1, Regtype::Integer),
-                    },
-                    Construct::Structure(_, size) => (*size, Regtype::Struct),
-                    _ => panic!("Invalid child of Datatype in create_pass_location"),
-                };
-                generator.up();
-                result
-            },
-            Datatype::Pointer => (8, Regtype::Pointer),
-        },
-        _ => panic!("Node at create_pass_location isn't Datatype"),
-    };
+    let info = get_datatype_info(generator);
     let pass_location = PassLocation {
         index: index,
-        size: size,
-        regtype: regtype,
+        size: info.size,
+        regtype: info.regtype,
     };
     generator.up();
     return pass_location;
