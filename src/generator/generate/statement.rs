@@ -7,6 +7,7 @@ use super::content::generate_content;
 use super::resolve::resolve_content;
 use super::expression::generate_expression_lvalue;
 use super::expression::generate_expression_rvalue;
+use super::datatype::validate_datatypes;
 
 
 fn generate_statement_block(generator: &mut Generator) {
@@ -28,7 +29,9 @@ fn generate_statement_assign(generator: &mut Generator) {
     let (src_symbol, src_datatype_i) = generate_expression_rvalue(generator);
     generator.up();
 
-    // TODO: Assert src_datatype = dst_datatype
+    if !validate_datatypes(generator, dest_datatype_i, src_datatype_i, true, false) {
+        panic!("Datatypes don't match in assign statement");
+    }
 
     generator.add_element(Element::Instruction(instruction)); // Move, load or store
     generator.add_element(Element::Operand(Operand::Symbol(src_symbol)));

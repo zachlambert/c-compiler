@@ -3,6 +3,19 @@ use super::construct::*;
 use super::generator::Generator;
 use super::instructions::*;
 
+fn skip_qualifiers(generator: &mut Generator) {
+    loop {
+        match generator.current() {
+            Construct::Qualifier(_) => {
+                if !generator.next() {
+                    panic!("");
+                }
+            },
+            _ => break,
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct DatatypeInfo {
     pub size: usize,
@@ -15,6 +28,7 @@ pub fn get_datatype_info(generator: &mut Generator) -> DatatypeInfo {
         Construct::Datatype(datatype) => match datatype {
             Datatype::Terminal => {
                 generator.down();
+                skip_qualifiers(generator);
                 let result = match generator.current() {
                     Construct::Primitive(primitive) => match primitive {
                         Primitive::U8 => (1, Regtype::Integer),
@@ -94,7 +108,7 @@ pub fn get_pointer_datatype(generator: &mut Generator, symbol_i: usize) -> usize
     }
     generator.down();
 
-    // Current level = { qualiifier } , datatype
+    // Current level = { qualifier } , datatype
     // Ignore qualifiers, not relevant
     loop {
         match generator.current() {
@@ -113,4 +127,136 @@ pub fn get_pointer_datatype(generator: &mut Generator, symbol_i: usize) -> usize
     generator.up();
 
     return node_i;
+}
+
+fn check_mutable(generator: &mut Generator) -> bool {
+    // Current node = datatype
+    generator.down();
+    let mut mutable = false;
+    loop {
+        match generator.current() {
+            Construct::Qualifier(qualifier) => match qualifier {
+                Qualifier::Mut => {
+                    generator.up();
+                    mutable = true;
+                },
+                // _ => (),
+            },
+            _ => (),
+        }
+        if !generator.next() {
+            break;
+        }
+    }
+    generator.up();
+    return mutable;
+}
+
+fn match_datatype_pointer(generator: &mut Generator, other: usize) -> bool {
+    generator.down_ref(other);
+    let matches = match generator.current() {
+        Construct::Datatype(datatype) => match datatype {
+            Datatype::Pointer => true,
+            _ => false,
+        },
+        _ => panic!(""),
+    };
+    generator.up();
+    return matches;
+}
+
+fn match_datatype_reference(generator: &mut Generator, ref_i: usize, other: usize) -> bool {
+    // Each struct is a specific node, so can compare ref_i.
+    generator.down_ref(other);
+    let matches = match generator.current() {
+        Construct::Datatype(datatype) => match datatype {
+            Datatype::Terminal => {
+                generator.down();
+                skip_qualifiers(generator);
+                let matches = match generator.current() {
+                    Construct::Reference(other_ref_i) => (*other_ref_i == ref_i),
+                    _ => false,
+                };
+                generator.up();
+                matches
+            },
+            _ => false,
+        },
+        _ => false,
+    };
+    generator.up();
+    return matches;
+}
+
+fn match_datatype_primitive(generator: &mut Generator, primitive: Primitive, other: usize) -> bool {
+    // Each struct is a specific node, so can compare ref_i.
+    generator.down_ref(other);
+    let matches = match generator.current() {
+        Construct::Datatype(datatype) => match datatype {
+            Datatype::Terminal => {
+                generator.down();
+                skip_qualifiers(generator);
+                let matches = match generator.current() {
+                    Construct::Primitive(other_primitive) => (*other_primitive == primitive),
+                    _ => false,
+                };
+                generator.up();
+                matches
+            },
+            _ => false,
+        },
+        _ => false,
+    };
+    generator.up();
+    return matches;
+}
+
+pub fn validate_datatypes(generator: &mut Generator, lhs: usize, rhs: usize, lhs_mutable: bool, rhs_mutable: bool) -> bool {
+
+    generator.down_ref(lhs);
+    match generator.current() {
+        Construct::Datatype(datatype) => match datatype {
+            Datatype::Pointer => {
+                if !match_datatype_pointer(generator, rhs) {
+                    return false;
+                }
+            },
+            Datatype::Terminal => {
+                generator.down();
+                skip_qualifiers(generator);
+                match generator.current() {
+                    Construct::Reference(node_i_) => {
+                        let node_i = *node_i_;
+                        if !match_datatype_reference(generator, node_i, rhs) {
+                            return false;
+                        }
+                    },
+                    Construct::Primitive(primitive_) => {
+                        let primitive = Primitive::clone(primitive_);
+                        if !match_datatype_primitive(generator, primitive, rhs) {
+                            return false;
+                        }
+                    },
+                    _ => return false,
+                }
+            }
+        },
+        _ => panic!(""),
+    }
+    generator.up();
+
+    generator.down_ref(lhs);
+    if lhs_mutable && !check_mutable(generator) {
+        generator.up();
+        return false;
+    }
+
+    generator.down_ref(rhs);
+    if rhs_mutable && !check_mutable(generator) {
+        generator.up();
+        return false;
+    }
+    generator.up();
+
+    return true;
 }

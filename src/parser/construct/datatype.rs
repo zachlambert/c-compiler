@@ -1,7 +1,7 @@
 
 use std::fmt;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Primitive {
     I8,
     I16,

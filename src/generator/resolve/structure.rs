@@ -45,7 +45,10 @@ fn find_member_size(generator: &mut Generator) -> usize {
                     generator.down();
                     let size = match generator.current() {
                         Construct::Primitive(primitive) => get_primitive_size(primitive),
-                        Construct::Reference(ref_id) => get_reference_size(generator, *ref_id),
+                        Construct::Reference(ref_id_) => {
+                            let ref_id = *ref_id_;
+                            get_reference_size(generator, ref_id)
+                        }
                         Construct::Identifier(_) => panic!("Struct datatype not resolved"),
                         _ => panic!("Unexpected child node of Datatype::Terminal"),
                     };
