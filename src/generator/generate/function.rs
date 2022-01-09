@@ -5,34 +5,9 @@ use super::instructions::*;
 
 use super::resolve::resolve_content;
 use super::content::generate_content;
-use super::datatype::get_datatype_info;
+use super::datatype::create_pass_location;
+use super::datatype::generate_argument_get;
 
-
-fn create_pass_location(generator: &mut Generator, index: usize) -> PassLocation {
-    // Current node = Argument or Returned
-    // Child is a datatype
-    generator.down();
-    let info = get_datatype_info(generator);
-    let pass_location = PassLocation {
-        index: index,
-        size: info.size,
-        regtype: info.regtype,
-    };
-    generator.up();
-    return pass_location;
-}
-
-fn generate_argument_get(generator: &mut Generator, argument: &PassLocation, name: &String) {
-    let symbol = Symbol {
-        name: String::clone(name),
-        version: 0,
-        size: argument.size,
-        regtype: Regtype::clone(&argument.regtype),
-    };
-    generator.add_element(Element::Instruction(Instruction::GetArgument));
-    generator.add_element(Element::Operand(Operand::PassLocation(PassLocation::clone(argument))));
-    generator.add_element(Element::Operand(Operand::Symbol(symbol)));
-}
 
 pub fn generate_function(generator: &mut Generator) {
     let mut name = match generator.current() {
@@ -57,27 +32,22 @@ pub fn generate_function(generator: &mut Generator) {
     // For returns: store pass locations in generator, to use later
     let mut arg_count: usize = 0;
     loop {
-        let name = match generator.current() {
+        match generator.current() {
             Construct::Argument(name_) => {
-                String::clone(name_)
+                let name = String::clone(name_);
+                generator.add_symbol(&name, true);
+                let pass_location = create_pass_location(generator, arg_count);
+                arg_count+=1;
+                generate_argument_get(generator, &pass_location, &name);
             }
             Construct::Returned => {
-                let pass_location = create_pass_location(generator, generator.return_count());
-                generator.push_return(pass_location);
-                if !generator.next() {
-                    panic!("Function node has no body child");
-                }
-                continue;
+                generator.down();
+                generator.push_return_datatype();
+                generator.up();
             },
             Construct::Block => break,
             _ => panic!("Unexpected child node of function"),
         };
-
-        // Add symbol if the current node was an argument
-        generator.add_symbol(&name, true);
-        let pass_location = create_pass_location(generator, arg_count);
-        arg_count+=1;
-        generate_argument_get(generator, &pass_location, &name);
 
         if !generator.next() {
             panic!("Function node has no body child");

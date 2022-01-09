@@ -32,7 +32,7 @@ pub struct Generator<'a> {
     scope: Vec<usize>, // stack of the start of mappings for each scope
     tree_stack: Vec<usize>,
     function_stack: Vec<usize>, // Stack of index within instructions for function start
-    returns: Vec<PassLocation>,
+    return_datatypes: Vec<usize>,
     temp_version: usize,
 }
 
@@ -47,7 +47,7 @@ impl<'a> Generator<'a> {
             scope: Vec::new(),
             tree_stack: Vec::new(),
             function_stack: Vec::new(),
-            returns: Vec::new(),
+            return_datatypes: Vec::new(),
             temp_version: 0,
         };
         generator.tree_stack.push(start_i);
@@ -180,7 +180,7 @@ impl<'a> Generator<'a> {
     pub fn increase_scope_function(&mut self) {
         self.increase_scope();
         self.function_stack.push(self.instructions.len());
-        self.returns.clear();
+        self.return_datatypes.clear();
         self.temp_version = 0;
     }
 
@@ -233,12 +233,14 @@ impl<'a> Generator<'a> {
         self.instructions.push(element);
     }
 
-    pub fn push_return(&mut self, pass_location: PassLocation) {
-        self.returns.push(pass_location);
+    pub fn push_return_datatype(&mut self) {
+        // Current node = datatype
+        let node_i = *self.tree_stack.last().expect("");
+        self.return_datatypes.push(node_i);
     }
 
-    pub fn return_count(&self) -> usize {
-        return self.returns.len();
+    pub fn get_return_datatype(&self, index: usize) -> usize {
+        return self.return_datatypes[index];
     }
 
     pub fn get_temp_version(&mut self) -> usize {

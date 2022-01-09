@@ -39,8 +39,6 @@ fn generate_statement_assign(generator: &mut Generator) {
 }
 
 fn generate_statement_return(generator: &mut Generator) {
-    // Children: expression
-    // TODO: Set return values
     generator.add_element(Element::Instruction(Instruction::Return));
 }
 

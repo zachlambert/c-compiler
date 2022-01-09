@@ -3,6 +3,45 @@ use super::construct::*;
 use super::generator::Generator;
 use super::instructions::*;
 
+
+pub fn create_pass_location(generator: &mut Generator, index: usize) -> PassLocation {
+    // Current node = Argument or Returned
+    // Child is a datatype
+    generator.down();
+    let info = get_datatype_info(generator);
+    let pass_location = PassLocation {
+        index: index,
+        size: info.size,
+        regtype: info.regtype,
+    };
+    generator.up();
+    return pass_location;
+}
+
+pub fn generate_argument_get(generator: &mut Generator, argument: &PassLocation, name: &String) {
+    let symbol = Symbol {
+        name: String::clone(name),
+        version: 0,
+        size: argument.size,
+        regtype: Regtype::clone(&argument.regtype),
+    };
+    generator.add_element(Element::Instruction(Instruction::GetArgument));
+    generator.add_element(Element::Operand(Operand::PassLocation(PassLocation::clone(argument))));
+    generator.add_element(Element::Operand(Operand::Symbol(symbol)));
+}
+
+pub fn generate_return_set(generator: &mut Generator, symbol: &Symbol, return_index: usize) {
+    // let symbol = Symbol {
+    //     name: String::clone(name),
+    //     version: 0,
+    //     size: argument.size,
+    //     regtype: Regtype::clone(&argument.regtype),
+    // };
+    // generator.add_element(Element::Instruction(Instruction::GetArgument));
+    // generator.add_element(Element::Operand(Operand::PassLocation(PassLocation::clone(argument))));
+    // generator.add_element(Element::Operand(Operand::Symbol(symbol)));
+}
+
 fn skip_qualifiers(generator: &mut Generator) {
     loop {
         match generator.current() {
